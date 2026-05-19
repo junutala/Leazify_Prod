@@ -47,7 +47,11 @@ export const metadata: Metadata = {
     images: ['/assets/images/app_logo.png'],
   },
   icons: {
-    icon: [{ url: '/favicon.ico', type: 'image/x-icon' }],
+    icon: [
+      { url: '/assets/images/color-1779168809332.png', type: 'image/png' },
+      { url: '/favicon.ico', type: 'image/x-icon' },
+    ],
+    apple: [{ url: '/assets/images/color-1779168809332.png', type: 'image/png' }],
   },
   robots: {
     index: true,
