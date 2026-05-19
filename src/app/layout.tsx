@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -12,14 +13,17 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new'
+  ),
   title: 'PropFlow — Commercial Real Estate Management',
-  description: 'PropFlow helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
+  description:
+    'PropFlow helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
   alternates: {
     canonical: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
     languages: {
-      'en': process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
-      'ar': process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
+      en: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
+      ar: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
     },
   },
   openGraph: {
@@ -66,9 +70,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <head>
@@ -81,7 +83,8 @@ export default function RootLayout({
               name: 'PropFlow',
               url: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
               logo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new'}/assets/images/app_logo.png`,
-              description: 'Commercial real estate management platform for property managers, landlords, and service providers.',
+              description:
+                'Commercial real estate management platform for property managers, landlords, and service providers.',
               sameAs: [],
             }),
           }}
@@ -93,7 +96,8 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'WebPage',
               name: 'PropFlow — Commercial Real Estate Management',
-              description: 'PropFlow helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
+              description:
+                'PropFlow helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
               url: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
               publisher: {
                 '@type': 'Organization',
@@ -113,7 +117,8 @@ export default function RootLayout({
               '@context': 'https://schema.org',
               '@type': 'SoftwareApplication',
               name: 'PropFlow',
-              description: 'Commercial real estate management platform for tracking leases, financials, and maintenance.',
+              description:
+                'Commercial real estate management platform for tracking leases, financials, and maintenance.',
               url: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
               applicationCategory: 'BusinessApplication',
               operatingSystem: 'Web',
@@ -126,16 +131,20 @@ export default function RootLayout({
           }}
         />
 
-        <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fpropflow2839back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.18" />
-        <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
+        <script
+          type="module"
+          async
+          src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fpropflow2839back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.18"
+        />
+        <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" />
+      </head>
       <body>
         <AuthProvider>
-          <LanguageProvider>
-            {children}
-          </LanguageProvider>
+          <LanguageProvider>{children}</LanguageProvider>
         </AuthProvider>
         <Toaster position="bottom-right" richColors closeButton />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
