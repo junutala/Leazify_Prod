@@ -6,6 +6,7 @@ import { Users, Plus, Search, Trash2, RefreshCw, Shield, UserCheck, ChevronDown,
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Modal from '@/components/ui/Modal';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // ─── Sidebar nav definition (mirrors Sidebar.tsx) ───────────────────────────
 const NAV_ITEMS = [
@@ -1470,6 +1471,7 @@ function LandlordAssignModal({
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProjectAssignmentClient() {
   const supabase = createClient();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabId>('roles');
 
   const [roles, setRoles] = useState<Role[]>([]);
@@ -1645,9 +1647,9 @@ export default function ProjectAssignmentClient() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">Project Assignment</h1>
+          <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">{t.staff_page_title}</h1>
           <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5">
-            Create roles, add staff, assign projects, and manage landlord ownership.
+            {t.staff_page_subtitle}
           </p>
         </div>
         <div className="flex gap-2 shrink-0">

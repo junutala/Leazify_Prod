@@ -23,6 +23,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -757,6 +758,7 @@ function KpiSummaryBar({ kpis }: { kpis: KpiCard[] }) {
 
 export default function ReportsClient() {
   const supabase = createClient();
+  const { t } = useLanguage();
 
   const [activeReport, setActiveReport] = useState<ReportType>('occupancy');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
@@ -852,9 +854,9 @@ export default function ReportsClient() {
             <BarChart3 size={18} />
           </div>
           <div>
-            <h1 className="text-[16px] sm:text-[17px] font-600 text-foreground leading-tight">Reports</h1>
+            <h1 className="text-[16px] sm:text-[17px] font-600 text-foreground leading-tight">{t.reports_title}</h1>
             <p className="text-[11px] sm:text-[12px] text-muted-foreground">
-              Generate and download operational reports as PDF or CSV
+              {t.reports_subtitle}
             </p>
           </div>
         </div>
@@ -865,7 +867,7 @@ export default function ReportsClient() {
         {/* ── Operational Reports ── */}
         <div>
           <p className="text-[11px] font-600 uppercase tracking-widest text-muted-foreground mb-2.5">
-            Operational Reports
+            {t.reports_operational}
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {operationalReports.map((cfg) => (
@@ -903,7 +905,7 @@ export default function ReportsClient() {
         {/* ── Raw Data Reports ── */}
         <div>
           <p className="text-[11px] font-600 uppercase tracking-widest text-muted-foreground mb-2.5">
-            Raw Data Exports
+            {t.reports_raw_data}
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {rawReports.map((cfg) => (

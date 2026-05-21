@@ -11,6 +11,7 @@ import {
   FileText, Clock, RefreshCw, BarChart2, CheckCircle, XCircle,
 } from 'lucide-react';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -122,6 +123,7 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
 
 export default function AnalyticsClient() {
   const supabase = createClient();
+  const { t } = useLanguage();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -296,9 +298,9 @@ export default function AnalyticsClient() {
       {/* Page Header */}
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">Analytics</h1>
+          <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">{t.analytics_title}</h1>
           <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5">
-            Key metrics derived from audit logs, leases, and invoices
+            {t.analytics_subtitle}
           </p>
         </div>
         <button
@@ -312,8 +314,8 @@ export default function AnalyticsClient() {
       {/* ── Section 1: User Activity ─────────────────────────────────────────── */}
       <section>
         <SectionHeader
-          title="User Activity"
-          subtitle="Audit log events per user and day over the last 7 days"
+          title={t.analytics_user_activity}
+          subtitle={t.analytics_user_activity_sub}
         />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
           <MetricCard
@@ -553,8 +555,8 @@ export default function AnalyticsClient() {
       {/* ── Section 4: Approval Turnaround Times ─────────────────────────────── */}
       <section>
         <SectionHeader
-          title="Approval Turnaround Times"
-          subtitle="Approval and rejection rates derived from audit log events"
+          title={t.analytics_approval_turnaround}
+          subtitle={t.analytics_approval_turnaround_sub}
         />
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-5">
           <MetricCard
