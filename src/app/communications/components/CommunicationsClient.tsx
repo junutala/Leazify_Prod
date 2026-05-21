@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Mail, Send, Users, CheckCircle, Search, ChevronDown, AlertCircle, Loader2, Plus, Save, Trash2, X, BookOpen, Building2, Layers, Home, FolderOpen } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -422,7 +423,8 @@ function HierarchySelector({
 
 export default function CommunicationsClient() {
   const supabase = createClient();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { assignedProjectIds } = useAuth();
 
   // All tenants (from leases)
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -510,13 +512,26 @@ export default function CommunicationsClient() {
     setLoadingTenants(false);
   }, [supabase]);
 
-  // ── Fetch projects ─────────────────────────────────────────────────────────
+  // ── Fetch projects (filtered by assignedProjectIds for staff users) ────────
   const fetchProjects = useCallback(async () => {
     setLoadingHierarchy(true);
-    const { data } = await supabase.from('projects').select('id, name').order('name');
+    let query = supabase.from('projects').select('id, name').order('name');
+
+    // If assignedProjectIds is a non-null array, filter to only those projects
+    // null means full access (superadmin/admin), empty array means no access
+    if (assignedProjectIds !== null && assignedProjectIds.length > 0) {
+      query = query.in('id', assignedProjectIds);
+    } else if (assignedProjectIds !== null && assignedProjectIds.length === 0) {
+      // Staff with no project assignments — show nothing
+      setProjects([]);
+      setLoadingHierarchy(false);
+      return;
+    }
+
+    const { data } = await query;
     if (data) setProjects(data.map((p: any) => ({ id: p.id, name: p.name })));
     setLoadingHierarchy(false);
-  }, [supabase]);
+  }, [supabase, assignedProjectIds]);
 
   useEffect(() => {
     fetchTenants();
@@ -534,7 +549,11 @@ export default function CommunicationsClient() {
     setUnits([]);
     if (!id) return;
     setLoadingHierarchy(true);
-    const { data } = await supabase.from('buildings').select('id, building_name').eq('project_id', id).order('building_name');
+    const { data } = await supabase
+      .from('buildings')
+      .select('id, building_name')
+      .eq('project_id', id)
+      .order('building_name');
     if (data) setBuildings(data.map((b: any) => ({ id: b.id, name: b.building_name })));
     setLoadingHierarchy(false);
   }, [supabase]);
@@ -548,7 +567,11 @@ export default function CommunicationsClient() {
     setUnits([]);
     if (!id) return;
     setLoadingHierarchy(true);
-    const { data } = await supabase.from('floors').select('id, floor_name').eq('building_id', id).order('floor_name');
+    const { data } = await supabase
+      .from('floors')
+      .select('id, floor_name')
+      .eq('building_id', id)
+      .order('floor_name');
     if (data) setFloors(data.map((f: any) => ({ id: f.id, name: f.floor_name })));
     setLoadingHierarchy(false);
   }, [supabase]);
@@ -560,7 +583,11 @@ export default function CommunicationsClient() {
     setUnits([]);
     if (!id) return;
     setLoadingHierarchy(true);
-    const { data } = await supabase.from('units').select('id, unit_name').eq('floor_id', id).order('unit_name');
+    const { data } = await supabase
+      .from('units')
+      .select('id, unit_name')
+      .eq('floor_id', id)
+      .order('unit_name');
     if (data) setUnits(data.map((u: any) => ({ id: u.id, name: u.unit_name })));
     setLoadingHierarchy(false);
   }, [supabase]);
@@ -571,6 +598,10 @@ export default function CommunicationsClient() {
 
   // ── Filtered tenants based on hierarchy ───────────────────────────────────
   const hierarchyFilteredTenants = tenants.filter((t) => {
+    // Also filter tenants by assigned projects for staff users
+    if (assignedProjectIds !== null && assignedProjectIds.length > 0) {
+      if (!assignedProjectIds.includes(t.project_id)) return false;
+    }
     if (selectedUnit) return t.unit_id === selectedUnit;
     if (selectedFloor) return t.floor_id === selectedFloor;
     if (selectedBuilding) return t.building_id === selectedBuilding;
@@ -695,8 +726,8 @@ export default function CommunicationsClient() {
         />
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-white shrink-0">
+      {/* Header — key on language forces re-render when language switches */}
+      <div key={`comms-header-${language}`} className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-white shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-primary/10 flex items-center justify-center">
             <Mail size={16} className="text-primary" />
