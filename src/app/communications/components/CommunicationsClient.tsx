@@ -718,7 +718,7 @@ export default function CommunicationsClient() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full min-h-screen bg-background">
+    <div key={language} className="flex flex-col h-full min-h-screen bg-background">
       {showTemplates && (
         <TemplateManagerPanel
           onSelect={applyTemplate}
@@ -726,8 +726,8 @@ export default function CommunicationsClient() {
         />
       )}
 
-      {/* Header — key on language forces re-render when language switches */}
-      <div key={`comms-header-${language}`} className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-white shrink-0">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-border bg-white shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-primary/10 flex items-center justify-center">
             <Mail size={16} className="text-primary" />

@@ -231,7 +231,7 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
 
       {/* Language switcher — visible on all screen sizes */}
       <div className="flex items-center justify-center">
-        <div className="flex items-center gap-1 bg-secondary/60 rounded-lg p-0.5">
+        <div className="flex items-center gap-1 bg-secondary/60 border border-border rounded-lg p-0.5">
           <button
             type="button"
             onClick={() => setLanguage('en')}
