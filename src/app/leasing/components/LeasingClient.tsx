@@ -43,10 +43,20 @@ const statusColors: Record<string, string> = {
   active: 'success', expired: 'error', terminated: 'error', pending: 'warning', renewed: 'info',
 };
 
-const paymentTermLabels: Record<string, string> = {
-  immediate: 'Immediate', '15_days': '15 Days', '30_days': '30 Days',
-  quarterly: 'Quarterly', half_yearly: 'Half Yearly', annually: 'Annually',
-};
+function usePaymentTerms() {
+  const { t } = useLanguage();
+  const paymentTermOptions: { value: string; label: string }[] = [
+    { value: 'immediate', label: t.pt_immediate },
+    { value: '15_days', label: t.pt_15_days },
+    { value: '30_days', label: t.pt_30_days },
+    { value: 'quarterly', label: t.pt_quarterly },
+    { value: 'half_yearly', label: t.pt_half_yearly },
+    { value: 'annually', label: t.pt_annually },
+  ];
+  const getPaymentTermLabel = (value: string) =>
+    paymentTermOptions.find(o => o.value === value)?.label || value;
+  return { paymentTermOptions, getPaymentTermLabel };
+}
 
 const leaseStatuses = ['draft', 'active', 'expired', 'terminated', 'renewed'];
 
@@ -117,7 +127,7 @@ function generateLeasePDF(lease: any) {
           <div class="field"><div class="label">Start Date</div><div class="value">${lease.start_date}</div></div>
           <div class="field"><div class="label">End Date</div><div class="value">${lease.end_date}</div></div>
           <div class="field"><div class="label">Annual Rent (AED)</div><div class="value">${Number(lease.rent_amount).toLocaleString()}</div></div>
-          <div class="field"><div class="label">Payment Term</div><div class="value">${paymentTermLabels[lease.payment_terms] || lease.payment_terms}</div></div>
+          <div class="field"><div class="label">Payment Term</div><div class="value">${lease.payment_terms}</div></div>
           <div class="field"><div class="label">Security Deposit (AED)</div><div class="value">${Number(lease.security_deposit).toLocaleString()}</div></div>
           <div class="field"><div class="label">Annual Increment %</div><div class="value">${lease.annual_increment_pct || 0}%</div></div>
           <div class="field"><div class="label">Turnover Rent %</div><div class="value">${lease.turnover_rent_pct || 0}%</div></div>
@@ -144,6 +154,7 @@ function AddLeaseModal({ open, onClose, onSaved }: { open: boolean; onClose: () 
   const supabase = createClient();
   const { t } = useLanguage();
   const { assignedProjectIds } = useAuth();
+  const { paymentTermOptions, getPaymentTermLabel } = usePaymentTerms();
   const [projects, setProjects] = useState<Project[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [floors, setFloors] = useState<Floor[]>([]);
@@ -452,7 +463,7 @@ function AddLeaseModal({ open, onClose, onSaved }: { open: boolean; onClose: () 
             <div>
               <label className={labelCls}>{t.lbl_payment_term}</label>
               <select className={inputCls()} {...register('payment_terms')}>
-                {Object.entries(paymentTermLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {paymentTermOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
@@ -463,7 +474,7 @@ function AddLeaseModal({ open, onClose, onSaved }: { open: boolean; onClose: () 
             <div>
               <label className={labelCls}>{t.leasing_sd_payment_term}</label>
               <select className={inputCls()} {...register('sd_payment_term')}>
-                {Object.entries(paymentTermLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {paymentTermOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
@@ -474,7 +485,7 @@ function AddLeaseModal({ open, onClose, onSaved }: { open: boolean; onClose: () 
             <div>
               <label className={labelCls}>{t.leasing_to_payment_term}</label>
               <select className={inputCls()} {...register('turnover_payment_term')}>
-                {Object.entries(paymentTermLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {paymentTermOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
@@ -485,7 +496,7 @@ function AddLeaseModal({ open, onClose, onSaved }: { open: boolean; onClose: () 
             <div>
               <label className={labelCls}>{t.leasing_amc_payment_term}</label>
               <select className={inputCls()} {...register('amc_payment_term')}>
-                {Object.entries(paymentTermLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {paymentTermOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
           </div>
@@ -521,6 +532,7 @@ function EditLeaseModal({ lease, open, onClose, onSaved }: { lease: Lease | null
   const supabase = createClient();
   const { t } = useLanguage();
   const { assignedProjectIds } = useAuth();
+  const { paymentTermOptions, getPaymentTermLabel } = usePaymentTerms();
   const [projects, setProjects] = useState<Project[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [floors, setFloors] = useState<Floor[]>([]);
@@ -754,7 +766,7 @@ function EditLeaseModal({ lease, open, onClose, onSaved }: { lease: Lease | null
             <div>
               <label className={labelCls}>{t.lbl_payment_term}</label>
               <select className={inputCls()} {...register('payment_terms')}>
-                {Object.entries(paymentTermLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {paymentTermOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
@@ -765,7 +777,7 @@ function EditLeaseModal({ lease, open, onClose, onSaved }: { lease: Lease | null
             <div>
               <label className={labelCls}>{t.leasing_sd_payment_term}</label>
               <select className={inputCls()} {...register('sd_payment_term')}>
-                {Object.entries(paymentTermLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {paymentTermOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
@@ -775,7 +787,7 @@ function EditLeaseModal({ lease, open, onClose, onSaved }: { lease: Lease | null
             <div>
               <label className={labelCls}>{t.leasing_to_payment_term}</label>
               <select className={inputCls()} {...register('turnover_payment_term')}>
-                {Object.entries(paymentTermLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {paymentTermOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
@@ -785,7 +797,7 @@ function EditLeaseModal({ lease, open, onClose, onSaved }: { lease: Lease | null
             <div>
               <label className={labelCls}>{t.leasing_amc_payment_term}</label>
               <select className={inputCls()} {...register('amc_payment_term')}>
-                {Object.entries(paymentTermLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                {paymentTermOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
           </div>
@@ -819,6 +831,7 @@ function EditLeaseModal({ lease, open, onClose, onSaved }: { lease: Lease | null
 function LeaseDetailModal({ lease, open, onClose, onUpdated }: { lease: Lease | null; open: boolean; onClose: () => void; onUpdated: () => void }) {
   const supabase = createClient();
   const { t } = useLanguage();
+  const { getPaymentTermLabel } = usePaymentTerms();
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState('');
 
@@ -857,7 +870,7 @@ function LeaseDetailModal({ lease, open, onClose, onUpdated }: { lease: Lease | 
           <div><span className="text-muted-foreground text-[12px]">{t.lbl_annual_rent}</span><p className="font-600 mt-0.5">AED {Number(lease.rent_amount).toLocaleString()}</p></div>
           <div><span className="text-muted-foreground text-[12px]">{t.lbl_security_deposit}</span><p className="font-500 mt-0.5">AED {Number(lease.security_deposit).toLocaleString()}</p></div>
           <div><span className="text-muted-foreground text-[12px]">{t.lbl_period}</span><p className="font-500 mt-0.5 text-[12px]">{lease.start_date} → {lease.end_date}</p></div>
-          <div><span className="text-muted-foreground text-[12px]">{t.lbl_payment_term}</span><p className="font-500 mt-0.5">{paymentTermLabels[lease.payment_terms] || lease.payment_terms}</p></div>
+                    <div><span className="text-muted-foreground text-[12px]">{t.lbl_payment_term}</span><p className="font-500 mt-0.5">{getPaymentTermLabel(lease.payment_terms)}</p></div>
           {lease.annual_increment_pct > 0 && <div><span className="text-muted-foreground text-[12px]">{t.leasing_annual_increment}</span><p className="font-500 mt-0.5">{lease.annual_increment_pct}%</p></div>}
           {lease.turnover_rent_pct > 0 && <div><span className="text-muted-foreground text-[12px]">{t.leasing_turnover_rent}</span><p className="font-500 mt-0.5">{lease.turnover_rent_pct}%</p></div>}
           <div><span className="text-muted-foreground text-[12px]">{t.lbl_status}</span>
@@ -892,6 +905,7 @@ export default function LeasingClient() {
   const supabase = createClient();
   const { t } = useLanguage();
   const { assignedProjectIds, authLoading } = useAuth();
+  const { getPaymentTermLabel } = usePaymentTerms();
   const [leases, setLeases] = useState<Lease[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
@@ -1065,7 +1079,7 @@ export default function LeasingClient() {
                       <td className="px-4 py-3">{lease.persons?.name || '—'}</td>
                       <td className="px-4 py-3 font-600 tabular-nums">AED {Number(lease.rent_amount).toLocaleString()}</td>
                       <td className="px-4 py-3 tabular-nums text-muted-foreground">AED {Number(lease.security_deposit).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-[12px]">{paymentTermLabels[lease.payment_terms] || lease.payment_terms}</td>
+                                            <td className="px-4 py-3 text-[12px]">{getPaymentTermLabel(lease.payment_terms)}</td>
                       <td className="px-4 py-3 text-[12px] text-muted-foreground whitespace-nowrap">{lease.start_date} → {lease.end_date}</td>
                       <td className="px-4 py-3"><Badge variant={statusColors[lease.status] as any || 'default'} size="sm">{lease.status.charAt(0).toUpperCase() + lease.status.slice(1)}</Badge></td>
                       <td className="px-4 py-3">
