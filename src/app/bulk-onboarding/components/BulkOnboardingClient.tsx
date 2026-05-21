@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Upload, Download, CheckCircle, XCircle, AlertTriangle, FileSpreadsheet } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 type UploadType = 'projects' | 'buildings' | 'floors' | 'units' | 'persons' | 'service_providers' | 'leases';
 
@@ -148,6 +149,7 @@ function normalizePaymentTerm(value: string | undefined, fallback: string): stri
 
 export default function BulkOnboardingClient() {
   const supabase = createClient();
+  const { t } = useLanguage();
   const [activeType, setActiveType] = useState<UploadType>('projects');
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
@@ -373,8 +375,8 @@ export default function BulkOnboardingClient() {
   return (
     <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">Bulk Onboarding</h1>
-        <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5">Upload CSV files to onboard estate hierarchy, persons, and service providers at scale</p>
+        <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">{t.bulk_title}</h1>
+        <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5">{t.bulk_subtitle}</p>
       </div>
 
       {/* Hierarchy mapping guide */}

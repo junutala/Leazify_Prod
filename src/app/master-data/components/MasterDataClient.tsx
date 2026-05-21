@@ -6,6 +6,7 @@ import { Plus, Users, Zap, Tag, Edit2, Trash2, X, Check, Eye, EyeOff, FileText, 
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Modal from '@/components/ui/Modal';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // ─── Country codes list ────────────────────────────────────────────────────────
 const COUNTRY_CODES = [
@@ -632,6 +633,7 @@ function StaticMastersTab() {
 type MasterTab = 'providers' | 'persons' | 'masters' | 'lease_status';
 
 export default function MasterDataClient() {
+  const { t } = useLanguage();
   const [tab, setTab] = useState<MasterTab>('providers');
 
   const tabs: { value: MasterTab; label: string; icon: React.ReactNode }[] = [
@@ -644,8 +646,8 @@ export default function MasterDataClient() {
   return (
     <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-5">
       <div>
-        <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">Master Data</h1>
-        <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5">Manage service providers, persons, and system lookup tables</p>
+        <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">{t.masterdata_title}</h1>
+        <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5">{t.masterdata_subtitle}</p>
       </div>
       <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl overflow-x-auto">
         {tabs.map(t => (

@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Modal from '@/components/ui/Modal';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TurnoverEntry {
   id: string;
@@ -243,6 +244,7 @@ export default function TurnoverRentClient() {
   const [filterMonth, setFilterMonth] = useState(0);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rejectModal, setRejectModal] = useState<{ open: boolean; entry: TurnoverEntry | null }>({ open: false, entry: null });
+  const { t } = useLanguage();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -318,8 +320,8 @@ export default function TurnoverRentClient() {
     <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[22px] font-700 text-foreground">Turnover Rent</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Mall usage type units — monthly sales-based rent calculation with approval workflow</p>
+          <h1 className="text-[22px] font-700 text-foreground">{t.turnover_title}</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">{t.turnover_subtitle}</p>
         </div>
         <button onClick={() => setShowUpload(true)} className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-500 bg-primary text-white rounded-lg hover:bg-primary/90 active:scale-95 transition-all">
           <Upload size={15} /> Upload Sales Data

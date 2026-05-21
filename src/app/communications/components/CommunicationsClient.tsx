@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Mail, Send, Users, CheckCircle, Search, ChevronDown, ChevronUp, AlertCircle, Loader2, Wrench, Plus, Save, Trash2, X, BookOpen } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -307,6 +308,7 @@ function TemplateManagerPanel({
 
 export default function CommunicationsClient() {
   const supabase = createClient();
+  const { t } = useLanguage();
 
   // Data
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -538,8 +540,8 @@ export default function CommunicationsClient() {
             <Mail size={16} className="text-primary" />
           </div>
           <div>
-            <h1 className="text-[15px] sm:text-[17px] font-600 text-foreground">Communications</h1>
-            <p className="text-[11px] sm:text-[12px] text-muted-foreground hidden sm:block">Send bulk notifications to tenants and service providers</p>
+            <h1 className="text-[15px] sm:text-[17px] font-600 text-foreground">{t.comms_title}</h1>
+            <p className="text-[11px] sm:text-[12px] text-muted-foreground hidden sm:block">{t.comms_subtitle}</p>
           </div>
         </div>
         <button

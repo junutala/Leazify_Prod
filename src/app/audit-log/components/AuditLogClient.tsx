@@ -6,6 +6,7 @@ import { ClipboardList, Search, Filter, RefreshCw, ChevronDown, ChevronRight, X,
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Badge from '@/components/ui/Badge';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AuditLog {
   id: string;
@@ -186,6 +187,7 @@ export default function AuditLogClient() {
   const [filterAction, setFilterAction] = useState('all');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
+  const { t } = useLanguage();
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -236,8 +238,8 @@ export default function AuditLogClient() {
       {/* Header */}
       <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">Audit Log</h1>
-          <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5">Track all entity changes with timestamps, users, and before/after values</p>
+          <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground">{t.audit_title}</h1>
+          <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5">{t.audit_subtitle}</p>
         </div>
         <button onClick={fetchLogs} className="flex items-center gap-1.5 px-3 py-2 text-[12px] text-muted-foreground border border-border rounded-lg hover:bg-secondary transition-all shrink-0">
           <RefreshCw size={13} /> <span className="hidden sm:inline">Refresh</span>

@@ -8,6 +8,7 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Modal from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -281,6 +282,7 @@ export default function StaffAssignmentsClient() {
   const supabase = createClient();
   const { isSuperAdmin, allowedNavKeys } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [staffList, setStaffList] = useState<StaffWithAssignments[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -414,9 +416,9 @@ export default function StaffAssignmentsClient() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground tracking-tight">Staff Assignment Verification</h1>
+          <h1 className="text-[18px] sm:text-[22px] font-700 text-foreground tracking-tight">{t.staff_tab_staff} — {t.staff_tab_assignments}</h1>
           <p className="text-[12px] sm:text-[13px] text-muted-foreground mt-0.5">
-            View, edit, and verify staff project and responsibility assignments in one place.
+            {t.staff_page_subtitle}
           </p>
         </div>
         <button
