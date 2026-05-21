@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Mail, Send, Users, CheckCircle, Search, ChevronDown, ChevronUp, AlertCircle, Loader2, Wrench, Plus, Save, Trash2, X, BookOpen } from 'lucide-react';
+import { Mail, Send, Users, CheckCircle, Search, ChevronDown, AlertCircle, Loader2, Plus, Save, Trash2, X, BookOpen, Building2, Layers, Home, FolderOpen } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -13,17 +13,20 @@ interface Tenant {
   full_name: string;
   email: string;
   unit_name: string;
+  floor_name: string;
+  building_name: string;
   project_name: string;
+  project_id: string;
+  building_id: string;
+  floor_id: string;
+  unit_id: string;
   lease_status: string;
   selected: boolean;
 }
 
-interface ServiceProvider {
+interface HierarchyItem {
   id: string;
-  company_name: string;
-  contact_email: string;
-  service_type: string;
-  selected: boolean;
+  name: string;
 }
 
 interface SendResult {
@@ -39,8 +42,6 @@ interface EmailTemplate {
   body: string;
   created_at: string;
 }
-
-type RecipientGroup = 'tenants' | 'providers' | 'both';
 
 // ─── Default starter templates ────────────────────────────────────────────────
 
@@ -127,7 +128,6 @@ function loadTemplates(): EmailTemplate[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  // Seed with starter templates
   const seeded: EmailTemplate[] = STARTER_TEMPLATES.map((t, i) => ({
     ...t,
     id: `starter-${i}`,
@@ -217,7 +217,6 @@ function TemplateManagerPanel({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <BookOpen size={18} className="text-primary" />
@@ -235,7 +234,6 @@ function TemplateManagerPanel({
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Template list */}
           <div className="w-56 shrink-0 border-r border-border overflow-y-auto">
             {templates.length === 0 ? (
               <p className="text-[12px] text-muted-foreground text-center py-6 px-3">No templates yet. Create one!</p>
@@ -262,7 +260,6 @@ function TemplateManagerPanel({
             )}
           </div>
 
-          {/* Edit panel */}
           <div className="flex-1 overflow-y-auto p-5">
             {(editingId || creating) ? (
               <div className="space-y-4">
@@ -304,26 +301,151 @@ function TemplateManagerPanel({
   );
 }
 
+// ─── Hierarchy Selector ───────────────────────────────────────────────────────
+
+interface HierarchySelectorProps {
+  projects: HierarchyItem[];
+  buildings: HierarchyItem[];
+  floors: HierarchyItem[];
+  units: HierarchyItem[];
+  selectedProject: string;
+  selectedBuilding: string;
+  selectedFloor: string;
+  selectedUnit: string;
+  onProjectChange: (id: string) => void;
+  onBuildingChange: (id: string) => void;
+  onFloorChange: (id: string) => void;
+  onUnitChange: (id: string) => void;
+  loadingHierarchy: boolean;
+}
+
+function HierarchySelector({
+  projects, buildings, floors, units,
+  selectedProject, selectedBuilding, selectedFloor, selectedUnit,
+  onProjectChange, onBuildingChange, onFloorChange, onUnitChange,
+  loadingHierarchy,
+}: HierarchySelectorProps) {
+  const selectCls = 'w-full px-3 py-2 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+
+  return (
+    <div className="px-4 pt-4 pb-3 border-b border-border space-y-3">
+      <p className="text-[11px] font-600 uppercase tracking-widest text-muted-foreground">Property Hierarchy</p>
+
+      {/* Project */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-1">
+          <FolderOpen size={12} className="text-primary" />
+          <label className="text-[11px] font-500 text-muted-foreground">Project</label>
+        </div>
+        <div className="relative">
+          <select
+            value={selectedProject}
+            onChange={e => onProjectChange(e.target.value)}
+            className={selectCls}
+            disabled={loadingHierarchy}
+          >
+            <option value="">All Projects</option>
+            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Building */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-1">
+          <Building2 size={12} className="text-primary" />
+          <label className="text-[11px] font-500 text-muted-foreground">Building</label>
+        </div>
+        <div className="relative">
+          <select
+            value={selectedBuilding}
+            onChange={e => onBuildingChange(e.target.value)}
+            className={selectCls}
+            disabled={!selectedProject || loadingHierarchy}
+          >
+            <option value="">All Buildings</option>
+            {buildings.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Floor */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-1">
+          <Layers size={12} className="text-primary" />
+          <label className="text-[11px] font-500 text-muted-foreground">Floor</label>
+        </div>
+        <div className="relative">
+          <select
+            value={selectedFloor}
+            onChange={e => onFloorChange(e.target.value)}
+            className={selectCls}
+            disabled={!selectedBuilding || loadingHierarchy}
+          >
+            <option value="">All Floors</option>
+            {floors.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Unit */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-1">
+          <Home size={12} className="text-primary" />
+          <label className="text-[11px] font-500 text-muted-foreground">Unit</label>
+        </div>
+        <div className="relative">
+          <select
+            value={selectedUnit}
+            onChange={e => onUnitChange(e.target.value)}
+            className={selectCls}
+            disabled={!selectedFloor || loadingHierarchy}
+          >
+            <option value="">All Units</option>
+            {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        </div>
+      </div>
+
+      {loadingHierarchy && (
+        <p className="text-[11px] text-muted-foreground text-center py-1">Loading hierarchy…</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CommunicationsClient() {
   const supabase = createClient();
   const { t } = useLanguage();
 
-  // Data
+  // All tenants (from leases)
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [loadingTenants, setLoadingTenants] = useState(true);
-  const [loadingProviders, setLoadingProviders] = useState(true);
+
+  // Hierarchy data
+  const [projects, setProjects] = useState<HierarchyItem[]>([]);
+  const [buildings, setBuildings] = useState<HierarchyItem[]>([]);
+  const [floors, setFloors] = useState<HierarchyItem[]>([]);
+  const [units, setUnits] = useState<HierarchyItem[]>([]);
+  const [loadingHierarchy, setLoadingHierarchy] = useState(false);
+
+  // Selected hierarchy
+  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedBuilding, setSelectedBuilding] = useState('');
+  const [selectedFloor, setSelectedFloor] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState('');
 
   // Compose
-  const [recipientGroup, setRecipientGroup] = useState<RecipientGroup>('tenants');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [searchTenant, setSearchTenant] = useState('');
-  const [searchProvider, setSearchProvider] = useState('');
   const [tenantsExpanded, setTenantsExpanded] = useState(true);
-  const [providersExpanded, setProvidersExpanded] = useState(true);
 
   // Template manager
   const [showTemplates, setShowTemplates] = useState(false);
@@ -333,7 +455,7 @@ export default function CommunicationsClient() {
   const [sendResult, setSendResult] = useState<SendResult | null>(null);
   const [sendError, setSendError] = useState('');
 
-  // ── Fetch tenants from leases ──────────────────────────────────────────────
+  // ── Fetch all tenants ──────────────────────────────────────────────────────
   const fetchTenants = useCallback(async () => {
     setLoadingTenants(true);
     const { data, error } = await supabase
@@ -342,7 +464,19 @@ export default function CommunicationsClient() {
         id,
         status,
         persons:tenant_id ( id, name, email ),
-        units:unit_id ( unit_name, floors ( buildings ( projects ( name ) ) ) )
+        units:unit_id (
+          id,
+          unit_name,
+          floors (
+            id,
+            floor_name,
+            buildings (
+              id,
+              building_name,
+              projects ( id, name )
+            )
+          )
+        )
       `)
       .in('status', ['active', 'pending']);
 
@@ -354,7 +488,13 @@ export default function CommunicationsClient() {
           full_name: l.persons.name || 'Unknown',
           email: l.persons.email,
           unit_name: l.units?.unit_name || '—',
+          floor_name: l.units?.floors?.floor_name || '—',
+          building_name: l.units?.floors?.buildings?.building_name || '—',
           project_name: l.units?.floors?.buildings?.projects?.name || '—',
+          project_id: l.units?.floors?.buildings?.projects?.id || '',
+          building_id: l.units?.floors?.buildings?.id || '',
+          floor_id: l.units?.floors?.id || '',
+          unit_id: l.units?.id || '',
           lease_status: l.status,
           selected: false,
         }));
@@ -370,74 +510,96 @@ export default function CommunicationsClient() {
     setLoadingTenants(false);
   }, [supabase]);
 
-  // ── Fetch service providers ────────────────────────────────────────────────
-  const fetchProviders = useCallback(async () => {
-    setLoadingProviders(true);
-    const { data, error } = await supabase
-      .from('service_providers')
-      .select('id, company_name, contact_email, service_type')
-      .not('contact_email', 'is', null);
-
-    if (!error && data) {
-      setProviders(
-        data.map((p: any) => ({
-          id: p.id,
-          company_name: p.company_name || 'Unknown',
-          contact_email: p.contact_email,
-          service_type: p.service_type || 'General',
-          selected: false,
-        }))
-      );
-    }
-    setLoadingProviders(false);
+  // ── Fetch projects ─────────────────────────────────────────────────────────
+  const fetchProjects = useCallback(async () => {
+    setLoadingHierarchy(true);
+    const { data } = await supabase.from('projects').select('id, name').order('name');
+    if (data) setProjects(data.map((p: any) => ({ id: p.id, name: p.name })));
+    setLoadingHierarchy(false);
   }, [supabase]);
 
   useEffect(() => {
     fetchTenants();
-    fetchProviders();
-  }, [fetchTenants, fetchProviders]);
+    fetchProjects();
+  }, [fetchTenants, fetchProjects]);
+
+  // ── Cascade: project → buildings ───────────────────────────────────────────
+  const handleProjectChange = useCallback(async (id: string) => {
+    setSelectedProject(id);
+    setSelectedBuilding('');
+    setSelectedFloor('');
+    setSelectedUnit('');
+    setBuildings([]);
+    setFloors([]);
+    setUnits([]);
+    if (!id) return;
+    setLoadingHierarchy(true);
+    const { data } = await supabase.from('buildings').select('id, building_name').eq('project_id', id).order('building_name');
+    if (data) setBuildings(data.map((b: any) => ({ id: b.id, name: b.building_name })));
+    setLoadingHierarchy(false);
+  }, [supabase]);
+
+  // ── Cascade: building → floors ─────────────────────────────────────────────
+  const handleBuildingChange = useCallback(async (id: string) => {
+    setSelectedBuilding(id);
+    setSelectedFloor('');
+    setSelectedUnit('');
+    setFloors([]);
+    setUnits([]);
+    if (!id) return;
+    setLoadingHierarchy(true);
+    const { data } = await supabase.from('floors').select('id, floor_name').eq('building_id', id).order('floor_name');
+    if (data) setFloors(data.map((f: any) => ({ id: f.id, name: f.floor_name })));
+    setLoadingHierarchy(false);
+  }, [supabase]);
+
+  // ── Cascade: floor → units ─────────────────────────────────────────────────
+  const handleFloorChange = useCallback(async (id: string) => {
+    setSelectedFloor(id);
+    setSelectedUnit('');
+    setUnits([]);
+    if (!id) return;
+    setLoadingHierarchy(true);
+    const { data } = await supabase.from('units').select('id, unit_name').eq('floor_id', id).order('unit_name');
+    if (data) setUnits(data.map((u: any) => ({ id: u.id, name: u.unit_name })));
+    setLoadingHierarchy(false);
+  }, [supabase]);
+
+  const handleUnitChange = (id: string) => {
+    setSelectedUnit(id);
+  };
+
+  // ── Filtered tenants based on hierarchy ───────────────────────────────────
+  const hierarchyFilteredTenants = tenants.filter((t) => {
+    if (selectedUnit) return t.unit_id === selectedUnit;
+    if (selectedFloor) return t.floor_id === selectedFloor;
+    if (selectedBuilding) return t.building_id === selectedBuilding;
+    if (selectedProject) return t.project_id === selectedProject;
+    return true;
+  });
+
+  const filteredTenants = hierarchyFilteredTenants.filter(
+    (t) =>
+      t.full_name.toLowerCase().includes(searchTenant.toLowerCase()) ||
+      t.email.toLowerCase().includes(searchTenant.toLowerCase()) ||
+      t.unit_name.toLowerCase().includes(searchTenant.toLowerCase())
+  );
+
+  const selectedTenants = tenants.filter((t) => t.selected);
 
   // ── Selection helpers ──────────────────────────────────────────────────────
   const toggleTenant = (id: string) =>
     setTenants((prev) => prev.map((t) => (t.id === id ? { ...t, selected: !t.selected } : t)));
 
-  const toggleProvider = (id: string) =>
-    setProviders((prev) => prev.map((p) => (p.id === id ? { ...p, selected: !p.selected } : p)));
-
-  const selectAllTenants = (val: boolean) =>
-    setTenants((prev) => prev.map((t) => ({ ...t, selected: val })));
-
-  const selectAllProviders = (val: boolean) =>
-    setProviders((prev) => prev.map((p) => ({ ...p, selected: val })));
-
-  const filteredTenants = tenants.filter(
-    (t) =>
-      t.full_name.toLowerCase().includes(searchTenant.toLowerCase()) ||
-      t.email.toLowerCase().includes(searchTenant.toLowerCase()) ||
-      t.project_name.toLowerCase().includes(searchTenant.toLowerCase())
-  );
-
-  const filteredProviders = providers.filter(
-    (p) =>
-      p.company_name.toLowerCase().includes(searchProvider.toLowerCase()) ||
-      p.contact_email.toLowerCase().includes(searchProvider.toLowerCase()) ||
-      p.service_type.toLowerCase().includes(searchProvider.toLowerCase())
-  );
-
-  const selectedTenants = tenants.filter((t) => t.selected);
-  const selectedProviders = providers.filter((p) => p.selected);
-
-  const totalSelected =
-    recipientGroup === 'tenants'
-      ? selectedTenants.length
-      : recipientGroup === 'providers'
-      ? selectedProviders.length
-      : selectedTenants.length + selectedProviders.length;
+  const selectAllFiltered = (val: boolean) => {
+    const filteredIds = new Set(filteredTenants.map(t => t.id));
+    setTenants((prev) => prev.map((t) => filteredIds.has(t.id) ? { ...t, selected: val } : t));
+  };
 
   // ── Apply template ─────────────────────────────────────────────────────────
-  const applyTemplate = (t: EmailTemplate) => {
-    setSubject(t.subject);
-    setBody(t.body);
+  const applyTemplate = (tpl: EmailTemplate) => {
+    setSubject(tpl.subject);
+    setBody(tpl.body);
   };
 
   // ── Save current as template ───────────────────────────────────────────────
@@ -471,14 +633,7 @@ export default function CommunicationsClient() {
       return;
     }
 
-    const recipients: { email: string; name: string }[] = [];
-
-    if (recipientGroup === 'tenants' || recipientGroup === 'both') {
-      selectedTenants.forEach((t) => recipients.push({ email: t.email, name: t.full_name }));
-    }
-    if (recipientGroup === 'providers' || recipientGroup === 'both') {
-      selectedProviders.forEach((p) => recipients.push({ email: p.contact_email, name: p.company_name }));
-    }
+    const recipients = selectedTenants.map((t) => ({ email: t.email, name: t.full_name }));
 
     if (recipients.length === 0) {
       setSendError('Please select at least one recipient.');
@@ -509,9 +664,7 @@ export default function CommunicationsClient() {
           totalRecipients: data.totalRecipients || recipients.length,
           errors: data.errors,
         });
-        // Deselect all after send
-        selectAllTenants(false);
-        selectAllProviders(false);
+        setTenants((prev) => prev.map((t) => ({ ...t, selected: false })));
         setSubject('');
         setBody('');
       }
@@ -522,10 +675,19 @@ export default function CommunicationsClient() {
     }
   };
 
+  // ─── Hierarchy breadcrumb label ────────────────────────────────────────────
+  const hierarchyLabel = (() => {
+    const parts: string[] = [];
+    if (selectedProject) parts.push(projects.find(p => p.id === selectedProject)?.name || '');
+    if (selectedBuilding) parts.push(buildings.find(b => b.id === selectedBuilding)?.name || '');
+    if (selectedFloor) parts.push(floors.find(f => f.id === selectedFloor)?.name || '');
+    if (selectedUnit) parts.push(units.find(u => u.id === selectedUnit)?.name || '');
+    return parts.filter(Boolean).join(' › ');
+  })();
+
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full min-h-screen bg-background">
-      {/* Template Manager Modal */}
       {showTemplates && (
         <TemplateManagerPanel
           onSelect={applyTemplate}
@@ -552,165 +714,108 @@ export default function CommunicationsClient() {
       </div>
 
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-        {/* ── Left: Recipient Selection ── */}
-        <div className="lg:w-[420px] shrink-0 border-b lg:border-b-0 lg:border-r border-border flex flex-col bg-white overflow-y-auto max-h-[40vh] lg:max-h-none">
-          {/* Group selector */}
-          <div className="px-4 pt-4 pb-3 border-b border-border">
-            <p className="text-[11px] font-600 uppercase tracking-widest text-muted-foreground mb-2">Recipient Group</p>
-            <div className="flex gap-2">
-              {(['tenants', 'providers', 'both'] as RecipientGroup[]).map((g) => (
-                <button
-                  key={g}
-                  onClick={() => setRecipientGroup(g)}
-                  className={`flex-1 py-1.5 rounded-lg text-[12px] font-500 border transition-all ${
-                    recipientGroup === g
-                      ? 'bg-primary text-white border-primary' :'bg-white text-muted-foreground border-border hover:border-primary/50'
-                  }`}
-                >
-                  {g === 'both' ? 'Both' : g === 'tenants' ? 'Tenants' : 'Providers'}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* ── Left: Hierarchy + Recipient Selection ── */}
+        <div className="lg:w-[420px] shrink-0 border-b lg:border-b-0 lg:border-r border-border flex flex-col bg-white overflow-y-auto max-h-[50vh] lg:max-h-none">
+
+          {/* Hierarchy Selector */}
+          <HierarchySelector
+            projects={projects}
+            buildings={buildings}
+            floors={floors}
+            units={units}
+            selectedProject={selectedProject}
+            selectedBuilding={selectedBuilding}
+            selectedFloor={selectedFloor}
+            selectedUnit={selectedUnit}
+            onProjectChange={handleProjectChange}
+            onBuildingChange={handleBuildingChange}
+            onFloorChange={handleFloorChange}
+            onUnitChange={handleUnitChange}
+            loadingHierarchy={loadingHierarchy}
+          />
 
           {/* Tenants section */}
-          {(recipientGroup === 'tenants' || recipientGroup === 'both') && (
-            <div className="border-b border-border">
-              <button
-                onClick={() => setTenantsExpanded(!tenantsExpanded)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/50 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Users size={14} className="text-primary" />
-                  <span className="text-[13px] font-600 text-foreground">Tenants</span>
-                  <span className="text-[11px] text-muted-foreground">({selectedTenants.length}/{tenants.length} selected)</span>
-                </div>
-                {tenantsExpanded ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
-              </button>
+          <div>
+            <button
+              onClick={() => setTenantsExpanded(!tenantsExpanded)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Users size={14} className="text-primary" />
+                <span className="text-[13px] font-600 text-foreground">Unit Holders</span>
+                <span className="text-[11px] text-muted-foreground">
+                  ({selectedTenants.length} selected / {hierarchyFilteredTenants.length} shown)
+                </span>
+              </div>
+              <ChevronDown size={14} className={`text-muted-foreground transition-transform ${tenantsExpanded ? 'rotate-180' : ''}`} />
+            </button>
 
-              {tenantsExpanded && (
-                <div className="px-4 pb-3">
-                  <div className="relative mb-2">
-                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      value={searchTenant}
-                      onChange={(e) => setSearchTenant(e.target.value)}
-                      placeholder="Search tenants..."
-                      className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40"
-                    />
+            {tenantsExpanded && (
+              <div className="px-4 pb-3">
+                {/* Hierarchy context label */}
+                {hierarchyLabel && (
+                  <div className="flex items-center gap-1.5 mb-2 px-2.5 py-1.5 bg-primary/5 border border-primary/15 rounded-lg">
+                    <FolderOpen size={11} className="text-primary shrink-0" />
+                    <span className="text-[11px] text-primary font-500 truncate">{hierarchyLabel}</span>
                   </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <button onClick={() => selectAllTenants(true)} className="text-[11px] text-primary hover:underline">Select all</button>
-                    <button onClick={() => selectAllTenants(false)} className="text-[11px] text-muted-foreground hover:underline">Clear</button>
-                  </div>
+                )}
 
-                  {loadingTenants ? (
-                    <div className="space-y-2">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-10 bg-secondary/60 rounded-lg animate-pulse" />
-                      ))}
-                    </div>
-                  ) : filteredTenants.length === 0 ? (
-                    <p className="text-[12px] text-muted-foreground text-center py-4">No tenants found</p>
-                  ) : (
-                    <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
-                      {filteredTenants.map((t) => (
-                        <label
-                          key={t.id}
-                          className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-colors ${
-                            t.selected ? 'bg-primary/8 border border-primary/20' : 'hover:bg-secondary/60 border border-transparent'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={t.selected}
-                            onChange={() => toggleTenant(t.id)}
-                            className="mt-0.5 accent-primary shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <p className="text-[12px] font-500 text-foreground truncate">{t.full_name}</p>
-                            <p className="text-[11px] text-muted-foreground truncate">{t.email}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">{t.project_name} · {t.unit_name}</p>
-                          </div>
-                          <Badge variant={t.lease_status === 'active' ? 'success' : 'default'} className="shrink-0 text-[9px] px-1.5 py-0.5">
-                            {t.lease_status}
-                          </Badge>
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                <div className="relative mb-2">
+                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={searchTenant}
+                    onChange={(e) => setSearchTenant(e.target.value)}
+                    placeholder="Search tenants..."
+                    className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40"
+                  />
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Service Providers section */}
-          {(recipientGroup === 'providers' || recipientGroup === 'both') && (
-            <div>
-              <button
-                onClick={() => setProvidersExpanded(!providersExpanded)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/50 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Wrench size={14} className="text-primary" />
-                  <span className="text-[13px] font-600 text-foreground">Service Providers</span>
-                  <span className="text-[11px] text-muted-foreground">({selectedProviders.length}/{providers.length} selected)</span>
+                <div className="flex items-center justify-between mb-2">
+                  <button onClick={() => selectAllFiltered(true)} className="text-[11px] text-primary hover:underline">Select all shown</button>
+                  <button onClick={() => selectAllFiltered(false)} className="text-[11px] text-muted-foreground hover:underline">Clear shown</button>
                 </div>
-                {providersExpanded ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
-              </button>
 
-              {providersExpanded && (
-                <div className="px-4 pb-3">
-                  <div className="relative mb-2">
-                    <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      value={searchProvider}
-                      onChange={(e) => setSearchProvider(e.target.value)}
-                      placeholder="Search providers..."
-                      className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40"
-                    />
+                {loadingTenants ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-10 bg-secondary/60 rounded-lg animate-pulse" />
+                    ))}
                   </div>
-                  <div className="flex items-center justify-between mb-2">
-                    <button onClick={() => selectAllProviders(true)} className="text-[11px] text-primary hover:underline">Select all</button>
-                    <button onClick={() => selectAllProviders(false)} className="text-[11px] text-muted-foreground hover:underline">Clear</button>
+                ) : filteredTenants.length === 0 ? (
+                  <p className="text-[12px] text-muted-foreground text-center py-4">
+                    {hierarchyLabel ? 'No unit holders found in this selection' : 'No tenants found'}
+                  </p>
+                ) : (
+                  <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+                    {filteredTenants.map((tenant) => (
+                      <label
+                        key={tenant.id}
+                        className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-colors ${
+                          tenant.selected ? 'bg-primary/8 border border-primary/20' : 'hover:bg-secondary/60 border border-transparent'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={tenant.selected}
+                          onChange={() => toggleTenant(tenant.id)}
+                          className="mt-0.5 accent-primary shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] font-500 text-foreground truncate">{tenant.full_name}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{tenant.email}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {tenant.project_name} › {tenant.building_name} › {tenant.floor_name} › {tenant.unit_name}
+                          </p>
+                        </div>
+                        <Badge variant={tenant.lease_status === 'active' ? 'success' : 'default'} className="shrink-0 text-[9px] px-1.5 py-0.5">
+                          {tenant.lease_status}
+                        </Badge>
+                      </label>
+                    ))}
                   </div>
-
-                  {loadingProviders ? (
-                    <div className="space-y-2">
-                      {[1, 2].map((i) => (
-                        <div key={i} className="h-10 bg-secondary/60 rounded-lg animate-pulse" />
-                      ))}
-                    </div>
-                  ) : filteredProviders.length === 0 ? (
-                    <p className="text-[12px] text-muted-foreground text-center py-4">No providers found</p>
-                  ) : (
-                    <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
-                      {filteredProviders.map((p) => (
-                        <label
-                          key={p.id}
-                          className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-colors ${
-                            p.selected ? 'bg-primary/8 border border-primary/20' : 'hover:bg-secondary/60 border border-transparent'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={p.selected}
-                            onChange={() => toggleProvider(p.id)}
-                            className="mt-0.5 accent-primary shrink-0"
-                          />
-                          <div className="min-w-0">
-                            <p className="text-[12px] font-500 text-foreground truncate">{p.company_name}</p>
-                            <p className="text-[11px] text-muted-foreground truncate">{p.contact_email}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">{p.service_type}</p>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Right: Compose ── */}
@@ -780,17 +885,19 @@ export default function CommunicationsClient() {
           <div className="bg-white border border-border rounded-xl p-4 flex items-center justify-between gap-4">
             <div>
               <p className="text-[13px] font-600 text-foreground">
-                {totalSelected === 0 ? 'No recipients selected' : `${totalSelected} recipient${totalSelected !== 1 ? 's' : ''} selected`}
+                {selectedTenants.length === 0
+                  ? 'No recipients selected'
+                  : `${selectedTenants.length} recipient${selectedTenants.length !== 1 ? 's' : ''} selected`}
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {recipientGroup === 'tenants' && `${selectedTenants.length} tenant${selectedTenants.length !== 1 ? 's' : ''}`}
-                {recipientGroup === 'providers' && `${selectedProviders.length} provider${selectedProviders.length !== 1 ? 's' : ''}`}
-                {recipientGroup === 'both' && `${selectedTenants.length} tenant${selectedTenants.length !== 1 ? 's' : ''} + ${selectedProviders.length} provider${selectedProviders.length !== 1 ? 's' : ''}`}
+                {hierarchyLabel
+                  ? `Scope: ${hierarchyLabel}`
+                  : 'Use the hierarchy above to filter unit holders'}
               </p>
             </div>
             <button
               onClick={handleSend}
-              disabled={sending || totalSelected === 0 || !subject.trim() || !body.trim()}
+              disabled={sending || selectedTenants.length === 0 || !subject.trim() || !body.trim()}
               className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-[13px] font-600 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               {sending ? (
