@@ -2,118 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Loader2, Lock } from 'lucide-react';
-
-// ─── Login Modal (Sign In) ────────────────────────────────────────────────────
-function LoginModal({ onClose }: { onClose: () => void }) {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPwd, setShowPwd] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-      if (authError) throw authError;
-      if (!data.session) throw new Error('No session returned');
-      if (email === 'tenant@propflow.io') {
-        router.push('/tenant-portal');
-      } else if (email === 'provider@propflow.io') {
-        router.push('/service-provider-portal');
-      } else {
-        router.push('/dashboard');
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Invalid credentials. Please try again.';
-      setError(msg);
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-      style={{ background: 'rgba(7,15,28,0.82)', backdropFilter: 'blur(6px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
-        style={{ animation: 'slideUp 0.35s cubic-bezier(0.16,1,0.3,1)' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="relative p-8 pb-7" style={{ background: 'linear-gradient(135deg,#0d1c2e,#1f3d63)' }}>
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-5 w-8 h-8 rounded-full flex items-center justify-center text-white transition-colors"
-            style={{ background: 'rgba(255,255,255,0.1)' }}
-          >
-            <X size={15} />
-          </button>
-          <div className="mb-3" style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: '#F5A623' }}>
-            Leaz<span style={{ color: '#29ABE2' }}>ify</span>
-          </div>
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: '#fff', marginBottom: 8 }}>
-            Sign In to Leazify
-          </h3>
-          <p style={{ fontSize: 13, color: '#7fb3d3', lineHeight: 1.55 }}>
-            Access your landlord, tenant, or provider portal.
-          </p>
-        </div>
-        <div className="p-8">
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block mb-2" style={{ fontSize: 11, fontWeight: 600, color: '#1a2e4a', letterSpacing: 1, textTransform: 'uppercase' }}>Email Address</label>
-              <input
-                type="email" value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com" required
-                style={{ display: 'block', width: '100%', padding: '13px 16px', border: '1.5px solid #d0e4f0', borderRadius: 8, fontSize: 14, fontFamily: "'DM Sans', sans-serif", color: '#0d1c2e', outline: 'none' }}
-                onFocus={e => { e.currentTarget.style.borderColor = '#F5A623'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(245,166,35,0.1)'; }}
-                onBlur={e => { e.currentTarget.style.borderColor = '#d0e4f0'; e.currentTarget.style.boxShadow = 'none'; }}
-              />
-            </div>
-            <div>
-              <label className="block mb-2" style={{ fontSize: 11, fontWeight: 600, color: '#1a2e4a', letterSpacing: 1, textTransform: 'uppercase' }}>Password</label>
-              <div className="relative">
-                <input
-                  type={showPwd ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••" required
-                  style={{ display: 'block', width: '100%', padding: '13px 40px 13px 16px', border: '1.5px solid #d0e4f0', borderRadius: 8, fontSize: 14, fontFamily: "'DM Sans', sans-serif", color: '#0d1c2e', outline: 'none' }}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#F5A623'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(245,166,35,0.1)'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = '#d0e4f0'; e.currentTarget.style.boxShadow = 'none'; }}
-                />
-                <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#5a6a85' }}>
-                  <Lock size={15} />
-                </button>
-              </div>
-            </div>
-            {error && <p style={{ fontSize: 12, color: '#c0392b', background: '#fef2f2', padding: '8px 12px', borderRadius: 8 }}>{error}</p>}
-            <button
-              type="submit" disabled={loading}
-              style={{ width: '100%', background: '#F5A623', color: '#fff', border: 'none', borderRadius: 8, padding: '15px', fontSize: 15, fontWeight: 600, fontFamily: "'DM Sans', sans-serif", cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-            >
-              {loading ? <><Loader2 size={16} className="animate-spin" /> Signing in…</> : 'Sign In →'}
-            </button>
-          </form>
-          <div className="mt-5 pt-5" style={{ borderTop: '1px solid #d0e4f0' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: '#5a6a85', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Portal Access</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11, color: '#5a6a85' }}>
-              <div className="flex items-center gap-2"><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F5A623', display: 'inline-block' }} /> Landlord / Admin Portal</div>
-              <div className="flex items-center gap-2"><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} /> Tenant Portal</div>
-              <div className="flex items-center gap-2"><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#29ABE2', display: 'inline-block' }} /> Service Provider Portal</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { Loader2 } from 'lucide-react';
 
 // ─── Book a Demo Modal (wired to Brevo via /api/expression-of-interest) ───────
 function DemoModal({ onClose }: { onClose: () => void }) {
@@ -232,7 +121,7 @@ function DemoModal({ onClose }: { onClose: () => void }) {
 
 // ─── Main Landing Page ────────────────────────────────────────────────────────
 export default function LandingPage() {
-  const [showLogin, setShowLogin] = useState(false);
+  const router = useRouter();
   const [showDemo, setShowDemo] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -418,7 +307,7 @@ export default function LandingPage() {
             <a href="#usp" className="lp-nav-link" onClick={() => setNavOpen(false)}>Why Leazify</a>
             <a href="#outcomes" className="lp-nav-link" onClick={() => setNavOpen(false)}>Outcomes</a>
             <a href="#contact" className="lp-nav-link" onClick={() => setNavOpen(false)}>Contact</a>
-            <button className="lp-btn-ghost" onClick={() => { setShowLogin(true); setNavOpen(false); }}>Sign In</button>
+            <button className="lp-btn-ghost" onClick={() => { router.push('/sign-up-login-screen'); setNavOpen(false); }}>Sign In</button>
             <button className="lp-btn-blue" onClick={() => { setShowDemo(true); setNavOpen(false); }}>Book a Demo</button>
           </div>
 
@@ -662,7 +551,6 @@ export default function LandingPage() {
       </div>
 
       {/* Modals */}
-      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
       {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
     </>
   );
