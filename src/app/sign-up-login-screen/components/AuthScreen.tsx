@@ -58,21 +58,6 @@ export default function AuthScreen() {
 
         <div className="relative z-10 flex items-center justify-between">
           <p className="text-[11px] text-white/30">{t?.auth_copyright}</p>
-          {/* Language switcher */}
-          <div className="flex items-center gap-1 bg-white/10 rounded-lg p-0.5">
-            <button
-              onClick={() => setLanguage('en')}
-              className={`px-2.5 py-1 text-[11px] font-600 rounded-md transition-all duration-150 ${language === 'en' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/70'}`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => setLanguage('ar')}
-              className={`px-2.5 py-1 text-[11px] font-600 rounded-md transition-all duration-150 ${language === 'ar' ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white/70'}`}
-            >
-              عر
-            </button>
-          </div>
         </div>
       </div>
       {/* Right panel — form */}

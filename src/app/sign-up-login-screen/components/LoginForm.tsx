@@ -3,9 +3,10 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Copy, Check, Loader2, Building2, Lock } from 'lucide-react';
+import { Eye, EyeOff, Copy, Check, Loader2, Building2, Lock, ArrowLeft, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface LoginValues {
   email: string;
@@ -38,8 +39,13 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [view, setView] = useState<'login' | 'forgot'>('login');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
   const router = useRouter();
   const { signIn } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
 
   const {
     register,
@@ -59,7 +65,6 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
       }
       toast.success('Signed in successfully');
       const userEmail = authData.user?.email || '';
-      // Check user_metadata role for portal-specific routing
       const userRole = authData.user?.user_metadata?.role || '';
       if (userEmail === 'tenant@propflow.io') {
         router.push('/tenant-portal');
@@ -68,7 +73,6 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
       } else if (userRole === 'landlord') {
         router.push('/landlord-dashboard');
       } else {
-        // Check user_profiles role for landlords created via the portal
         try {
           const { createClient } = await import('@/lib/supabase/client');
           const supabase = createClient();
@@ -104,6 +108,116 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await fetch('/api/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Failed to send reset email');
+      } else {
+        setForgotSent(true);
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  // ── Forgot Password View ──
+  if (view === 'forgot') {
+    return (
+      <div className="space-y-5 animate-fade-in">
+        <div className="text-center pb-1">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+            <Mail size={22} className="text-primary" />
+          </div>
+          <h2 className="text-[22px] font-800 text-foreground mb-1">
+            {forgotSent ? 'Check your email' : 'Forgot password?'}
+          </h2>
+          <p className="text-[13px] text-muted-foreground">
+            {forgotSent
+              ? `We've sent a password reset link to ${forgotEmail}`
+              : 'Enter your email and we\'ll send you a reset link'}
+          </p>
+        </div>
+
+        {!forgotSent ? (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-[12px] font-600 text-foreground">Email address</label>
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                placeholder="you@company.com"
+                className="w-full px-4 py-3 text-[14px] bg-secondary/40 border border-border rounded-xl outline-none transition-all duration-150 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/15"
+                autoFocus
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={forgotLoading}
+              className="w-full py-3 bg-primary text-white text-[14px] font-600 rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {forgotLoading ? (
+                <><Loader2 size={16} className="animate-spin" /><span>Sending...</span></>
+              ) : (
+                <span>Send Reset Link</span>
+              )}
+            </button>
+          </form>
+        ) : (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+            <p className="text-[13px] text-emerald-700">
+              If an account exists for <strong>{forgotEmail}</strong>, you will receive a password reset email shortly.
+            </p>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => { setView('login'); setForgotSent(false); setForgotEmail(''); }}
+          className="w-full flex items-center justify-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft size={14} />
+          Back to sign in
+        </button>
+
+        {/* Language switcher */}
+        <div className="flex items-center justify-center pt-1">
+          <div className="flex items-center gap-1 bg-secondary/60 rounded-lg p-0.5">
+            <button
+              type="button"
+              onClick={() => setLanguage('en')}
+              className={`px-3 py-1 text-[11px] font-600 rounded-md transition-all duration-150 ${language === 'en' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('ar')}
+              className={`px-3 py-1 text-[11px] font-600 rounded-md transition-all duration-150 ${language === 'ar' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              عر
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Login View ──
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 animate-fade-in">
       {/* Header */}
@@ -113,6 +227,26 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
         </div>
         <h2 className="text-[22px] font-800 text-foreground mb-1">Welcome back</h2>
         <p className="text-[13px] text-muted-foreground">Sign in to your Leazify workspace</p>
+      </div>
+
+      {/* Language switcher — visible on all screen sizes */}
+      <div className="flex items-center justify-center">
+        <div className="flex items-center gap-1 bg-secondary/60 rounded-lg p-0.5">
+          <button
+            type="button"
+            onClick={() => setLanguage('en')}
+            className={`px-3 py-1 text-[11px] font-600 rounded-md transition-all duration-150 ${language === 'en' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            onClick={() => setLanguage('ar')}
+            className={`px-3 py-1 text-[11px] font-600 rounded-md transition-all duration-150 ${language === 'ar' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            عر
+          </button>
+        </div>
       </div>
 
       {/* Email */}
@@ -137,7 +271,11 @@ export default function LoginForm({ onSwitchToSignup }: LoginFormProps) {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <label className="block text-[12px] font-600 text-foreground">Password</label>
-          <button type="button" className="text-[11px] text-primary hover:underline font-500">
+          <button
+            type="button"
+            onClick={() => setView('forgot')}
+            className="text-[11px] text-primary hover:underline font-500"
+          >
             Forgot password?
           </button>
         </div>
