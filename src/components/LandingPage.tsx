@@ -342,9 +342,10 @@ export default function LandingPage() {
                 <span className="lp-badge-dot" style={{ fontSize: 8 }}>●</span> One Smart Platform
               </div>
 
-              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(44px,5.5vw,76px)', lineHeight: 1.08, color: '#fff', marginBottom: 24, letterSpacing: -2 }}>
-                Rental Application for Residential, Retail,<br />
-                <em className="lp-hero-em" style={{ color: '#F5A623', fontStyle: 'normal' }}>Commercial Buildings and Malls</em>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px,3.5vw,52px)', lineHeight: 1.15, color: '#fff', marginBottom: 24, letterSpacing: -1 }}>
+                Rental Application for<br />
+                <span style={{ color: '#ffffff', fontStyle: 'normal' }}>Residential &amp; Retail</span><br />
+                <em className="lp-hero-em" style={{ color: '#F5A623', fontStyle: 'normal' }}>Commercial and Malls</em>
               </h1>
 
               <p style={{ fontSize: 17, color: '#7fb3d3', lineHeight: 1.75, maxWidth: 440, marginBottom: 40, fontWeight: 300 }}>
@@ -364,8 +365,8 @@ export default function LandingPage() {
             <div className="lp-hero-visual" style={{ position: 'relative' }}>
               <div style={{ position: 'relative' }}>
                 <img
-                  src="/assets/images/Screenshot-1779110385180.jpg"
-                  alt="Leazify Property Management Dashboard showing projects, buildings, floors and units overview"
+                  src="/assets/images/dashboard_screenshot-1779421613971.jpg"
+                  alt="Leazify Rental Application Dashboard showing rental management overview"
                   className="lp-screenshot"
                 />
                 <div className="lp-float-card">
