@@ -8,6 +8,7 @@ import { LayoutDashboard, Building2, FileText, DollarSign, Wrench, Settings, Che
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
 interface NavItem {
   id: string;
@@ -56,6 +57,7 @@ export default function Sidebar() {
   const router = useRouter();
   const { signOut, allowedNavKeys, user } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { refreshAll } = useDataRefresh();
   const supabase = createClient();
 
   const groups = [
@@ -150,6 +152,7 @@ export default function Sidebar() {
                   <Link
                     key={item.id}
                     href={item.href}
+                    prefetch={true}
                     title={!isMobile && collapsed ? label : undefined}
                     className={`group relative flex items-center gap-3 mx-2 px-3 py-2 rounded-lg text-[13.5px] font-medium transition-all duration-150 mb-0.5 ${active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'} ${!isMobile && collapsed ? 'justify-center px-0 mx-1' : ''}`}
                   >

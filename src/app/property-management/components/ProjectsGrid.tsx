@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Building2, MapPin, TrendingUp, ChevronRight, Search } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 interface ProjectsGridProps {
   onDrillDown: (project: { id: string; name: string; usage_type?: string }) => void;
@@ -14,41 +15,39 @@ interface ProjectsGridProps {
 
 export default function ProjectsGrid({ onDrillDown }: ProjectsGridProps) {
   const supabase = createClient();
-  // assignedProjectIds: null = full access, string[] = scoped to these project IDs
   const { assignedProjectIds, authLoading } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterUsage, setFilterUsage] = useState('all');
 
-  useEffect(() => {
-    // Wait for auth context to finish loading permissions
+  const fetchProjects = useCallback(async () => {
     if (authLoading) return;
+    setLoading(true);
 
-    const fetchProjects = async () => {
-      setLoading(true);
+    let query = supabase.from('projects').select('*, buildings(count)').order('name');
 
-      let query = supabase.from('projects').select('*, buildings(count)').order('name');
-
-      // Scope to assigned projects for staff users
-      if (assignedProjectIds !== null) {
-        if (assignedProjectIds.length === 0) {
-          setProjects([]);
-          setLoading(false);
-          return;
-        }
-        query = query.in('id', assignedProjectIds);
+    if (assignedProjectIds !== null) {
+      if (assignedProjectIds.length === 0) {
+        setProjects([]);
+        setLoading(false);
+        return;
       }
-      // assignedProjectIds === null → superadmin → no filter, fetch all
+      query = query.in('id', assignedProjectIds);
+    }
 
-      const { data, error } = await query;
-      if (error) console.error('[ProjectsGrid] fetch error:', error.message);
-      setProjects(data || []);
-      setLoading(false);
-    };
-
-    fetchProjects();
+    const { data, error } = await query;
+    if (error) console.error('[ProjectsGrid] fetch error:', error.message);
+    setProjects(data || []);
+    setLoading(false);
   }, [assignedProjectIds, authLoading]);
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('projects', fetchProjects);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   const filtered = projects.filter((p) => {
     const matchSearch = !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.city?.toLowerCase().includes(search.toLowerCase());

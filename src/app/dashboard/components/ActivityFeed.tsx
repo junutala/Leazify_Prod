@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { FileText, Wrench, DollarSign, UserPlus, AlertTriangle, CheckCircle2, Activity } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 interface AuditEntry {
   id: string;
@@ -92,6 +93,9 @@ export default function ActivityFeed() {
   useEffect(() => {
     fetchActivityRef.current = fetchActivity;
   });
+
+  // Refetch on route change
+  useAutoRefresh('activity-feed', () => fetchActivityRef.current());
 
   useEffect(() => {
     fetchActivity();

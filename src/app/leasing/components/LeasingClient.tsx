@@ -11,6 +11,7 @@ import { useForm } from 'react-hook-form';
 import { logAuditEvent } from '@/lib/auditLog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 interface Lease {
   id: string;
@@ -949,6 +950,9 @@ export default function LeasingClient() {
     setLeases(leaseList);
     setLoading(false);
   }, [assignedProjectIds, authLoading]);
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('leases', fetchLeases);
 
   useEffect(() => {
     fetchLeases();

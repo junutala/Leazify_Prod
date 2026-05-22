@@ -6,6 +6,7 @@ import { AlertTriangle, Clock, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 
 interface ExpiringLease {
@@ -115,6 +116,9 @@ export default function ExpiringLeasesTable() {
   useEffect(() => {
     fetchLeasesRef.current = fetchLeases;
   });
+
+  // Refetch on route change
+  useAutoRefresh('expiring-leases', () => fetchLeasesRef.current());
 
   useEffect(() => {
     fetchLeases();

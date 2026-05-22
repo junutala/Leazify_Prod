@@ -10,6 +10,7 @@ import Modal from '@/components/ui/Modal';
 import { useForm } from 'react-hook-form';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 interface ServiceRequest {
   id: string;
@@ -670,6 +671,9 @@ export default function MaintenanceClient() {
     setMaintenanceRequests(mrList);
     setLoading(false);
   }, [assignedProjectIds, authLoading]);
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('maintenance', fetchData);
 
   useEffect(() => {
     fetchData();

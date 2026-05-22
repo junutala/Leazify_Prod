@@ -9,6 +9,7 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Modal from '@/components/ui/Modal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatCurrencyFull } from '@/lib/currency';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -413,6 +414,9 @@ function ChequeReconciliationView() {
     if (!error) setPayments(data || []);
     setLoading(false);
   }, [filterReconciled]);
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('receipts', fetchChequePayments);
 
   useEffect(() => { fetchChequePayments(); }, [fetchChequePayments]);
 

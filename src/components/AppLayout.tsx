@@ -3,10 +3,12 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 import MimicUserBar from './MimicUserBar';
+import NavigationProgress from './NavigationProgress';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background">
+      <NavigationProgress />
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         <MimicUserBar />

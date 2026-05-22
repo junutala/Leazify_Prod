@@ -10,6 +10,7 @@ import {
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -662,6 +663,9 @@ export default function ServiceProviderPortalClient({ mimicProviderId }: { mimic
 
     setLoading(false);
   }, [supabase, mimicProviderId]);
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('service-provider-portal', loadData);
 
   useEffect(() => { loadData(); }, [loadData]);
 
