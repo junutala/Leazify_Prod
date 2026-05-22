@@ -465,16 +465,17 @@ export default function CommunicationsClient() {
       .select(`
         id,
         status,
-        persons:tenant_id ( id, name, email ),
+        lessee_person_id,
+        persons:lessee_person_id ( id, name, email ),
         units:unit_id (
           id,
           unit_name,
           floors (
             id,
-            floor_name,
+            name,
             buildings (
               id,
-              building_name,
+              name,
               projects ( id, name )
             )
           )
@@ -490,8 +491,8 @@ export default function CommunicationsClient() {
           full_name: l.persons.name || 'Unknown',
           email: l.persons.email,
           unit_name: l.units?.unit_name || '—',
-          floor_name: l.units?.floors?.floor_name || '—',
-          building_name: l.units?.floors?.buildings?.building_name || '—',
+          floor_name: l.units?.floors?.name || '—',
+          building_name: l.units?.floors?.buildings?.name || '—',
           project_name: l.units?.floors?.buildings?.projects?.name || '—',
           project_id: l.units?.floors?.buildings?.projects?.id || '',
           building_id: l.units?.floors?.buildings?.id || '',
@@ -773,7 +774,7 @@ export default function CommunicationsClient() {
             >
               <div className="flex items-center gap-2">
                 <Users size={14} className="text-primary" />
-                <span className="text-[13px] font-600 text-foreground">Unit Holders</span>
+                <span className="text-[13px] font-600 text-foreground">Tenants</span>
                 <span className="text-[11px] text-muted-foreground">
                   ({selectedTenants.length} selected / {hierarchyFilteredTenants.length} shown)
                 </span>
@@ -813,7 +814,7 @@ export default function CommunicationsClient() {
                   </div>
                 ) : filteredTenants.length === 0 ? (
                   <p className="text-[12px] text-muted-foreground text-center py-4">
-                    {hierarchyLabel ? 'No unit holders found in this selection' : 'No tenants found'}
+                    {hierarchyLabel ? 'No tenants found in this selection' : 'No tenants found'}
                   </p>
                 ) : (
                   <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
@@ -923,7 +924,7 @@ export default function CommunicationsClient() {
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {hierarchyLabel
                   ? `Scope: ${hierarchyLabel}`
-                  : 'Use the hierarchy above to filter unit holders'}
+                  : 'Use the hierarchy above to filter tenants'}
               </p>
             </div>
             <button
