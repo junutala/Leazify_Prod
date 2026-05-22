@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Building2, Home, ChevronDown, CheckSquare, Square, AlertCircle, Loader2, Save, LogIn, LogOut, CheckCircle2 } from 'lucide-react';
+import { Building2, Home, ChevronDown, CheckSquare, Square, AlertCircle, Loader2, Save, LogIn, LogOut, CheckCircle2, Upload, X, Image, Film } from 'lucide-react';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,24 +17,28 @@ interface MoveRecord {
   [key: string]: any;
 }
 
+interface MediaFile {
+  file: File;
+  preview: string;
+  type: 'image' | 'video';
+}
+
 // ─── Checklist field definitions ─────────────────────────────────────────────
 const MOVE_IN_SECTIONS = [
   {
     title: 'Documents & Legal',
     fields: [
-      { key: 'mi_tenancy_contract_signed', label: 'Signed tenancy contract (Ejari registered in Dubai / Tawtheeq in Abu Dhabi)', tag: 'ME' },
-      { key: 'mi_landlord_title_deed', label: "Copy of landlord\'s title deed" },
-      { key: 'mi_tenant_id_documents', label: 'Passport copies & visa / Emirates ID of all tenants', tag: 'ME' },
-      { key: 'mi_post_dated_cheques', label: 'Post-dated cheques handed over', tag: 'ME' },
-      { key: 'mi_security_deposit_receipt', label: 'Security deposit receipt', tag: 'ME' },
-      { key: 'mi_agency_commission_receipt', label: 'Agency commission receipt (if applicable)', tag: 'ME' },
+      { key: 'mi_tenancy_contract_signed', label: 'Signed tenancy contract (Ejari registered in Dubai / Tawtheeq in Abu Dhabi)' },
+      { key: 'mi_tenant_id_documents', label: 'Passport copies & visa / Emirates ID of all tenants' },
+      { key: 'mi_post_dated_cheques', label: 'Post-dated cheques handed over' },
+      { key: 'mi_security_deposit_receipt', label: 'Security Deposit Cheque' },
     ],
   },
   {
     title: 'Utilities & Services',
     fields: [
-      { key: 'mi_dewa_account_activated', label: 'DEWA / ADDC / SEWA account activated', tag: 'ME' },
-      { key: 'mi_chiller_account_setup', label: 'Chiller / district cooling account set up', tag: 'ME' },
+      { key: 'mi_dewa_account_activated', label: 'DEWA / ADDC / SEWA account activated' },
+      { key: 'mi_chiller_account_setup', label: 'Chiller / district cooling account set up' },
       { key: 'mi_internet_tv_arranged', label: 'Internet & TV package arranged' },
       { key: 'mi_building_access_card', label: 'Building access card / parking permit obtained' },
       { key: 'mi_amenity_cards_collected', label: 'Gym, pool & amenity access cards collected' },
@@ -46,17 +50,17 @@ const MOVE_IN_SECTIONS = [
       { key: 'mi_condition_report_signed', label: 'Full condition report signed by landlord & tenant' },
       { key: 'mi_meter_readings_recorded', label: 'Meter readings recorded (electricity, water, gas)' },
       { key: 'mi_keys_counted_signed', label: 'All keys, fobs & remotes counted and signed for' },
-      { key: 'mi_ac_units_tested', label: 'AC units tested (split & central)', tag: 'ME' },
+      { key: 'mi_ac_units_tested', label: 'AC units tested (split & central)' },
       { key: 'mi_water_heater_tested', label: 'Water heater & boiler tested' },
       { key: 'mi_appliances_tested', label: 'All appliances tested if furnished' },
-      { key: 'mi_pest_mould_check', label: 'Check for pest or mould issues', tag: 'ME' },
+      { key: 'mi_pest_mould_check', label: 'Check for pest or mould issues' },
     ],
   },
   {
     title: 'Practical Setup',
     fields: [
-      { key: 'mi_move_in_slot_confirmed', label: 'Confirm building move-in slot with management', tag: 'ME' },
-      { key: 'mi_municipality_fees_confirmed', label: 'Municipality fees confirmed', tag: 'ME' },
+      { key: 'mi_move_in_slot_confirmed', label: 'Confirm building move-in slot with management' },
+      { key: 'mi_municipality_fees_confirmed', label: 'Municipality fees confirmed' },
       { key: 'mi_renters_insurance_arranged', label: "Renter\'s insurance arranged" },
       { key: 'mi_emergency_contacts_saved', label: 'Emergency maintenance contacts saved (building, AC, plumber)' },
     ],
@@ -67,9 +71,9 @@ const MOVE_OUT_SECTIONS = [
   {
     title: 'Notice & Legal',
     fields: [
-      { key: 'mo_vacating_notice_served', label: 'Written vacating notice served within contract timeline', tag: 'ME' },
-      { key: 'mo_rera_requirements_confirmed', label: 'Confirm RERA / tenancy law notice requirements', tag: 'ME' },
-      { key: 'mo_ejari_cancellation_arranged', label: 'Ejari / Tawtheeq cancellation arranged', tag: 'ME' },
+      { key: 'mo_vacating_notice_served', label: 'Written vacating notice served within contract timeline' },
+      { key: 'mo_rera_requirements_confirmed', label: 'Confirm RERA / tenancy law notice requirements' },
+      { key: 'mo_ejari_cancellation_arranged', label: 'Ejari / Tawtheeq cancellation arranged' },
       { key: 'mo_outstanding_rent_settled', label: 'Outstanding rent / cheques confirmed settled' },
       { key: 'mo_bounced_cheques_resolved', label: 'Any bounced cheque issues resolved before departure', tag: '⚠ Legal' },
     ],
@@ -77,32 +81,32 @@ const MOVE_OUT_SECTIONS = [
   {
     title: 'Utilities & Services',
     fields: [
-      { key: 'mo_dewa_account_closed', label: 'DEWA / ADDC / SEWA account closed & final bill paid', tag: 'ME' },
-      { key: 'mo_chiller_account_closed', label: 'Chiller / district cooling account closed', tag: 'ME' },
+      { key: 'mo_dewa_account_closed', label: 'DEWA / ADDC / SEWA account closed & final bill paid' },
+      { key: 'mo_chiller_account_closed', label: 'Chiller / district cooling account closed' },
       { key: 'mo_internet_tv_cancelled', label: 'Internet / TV contract cancelled or transferred' },
       { key: 'mo_final_meter_readings', label: 'Final meter readings photographed on exit day' },
-      { key: 'mo_municipality_fee_final', label: 'Municipality & housing fee final payment confirmed', tag: 'ME' },
+      { key: 'mo_municipality_fee_final', label: 'Municipality & housing fee final payment confirmed' },
     ],
   },
   {
     title: 'Property Handover',
     fields: [
       { key: 'mo_deep_clean_completed', label: 'Full property deep clean completed' },
-      { key: 'mo_ac_filter_serviced', label: 'AC filter cleaning & servicing done', tag: 'ME' },
+      { key: 'mo_ac_filter_serviced', label: 'AC filter cleaning & servicing done' },
       { key: 'mo_damage_repaired', label: 'Damage beyond fair wear & tear repaired' },
       { key: 'mo_keys_returned', label: 'All keys, fobs, remotes & access cards returned' },
       { key: 'mo_joint_exit_inspection', label: 'Joint exit inspection conducted with landlord' },
       { key: 'mo_handover_certificate', label: 'Signed handover certificate obtained from landlord' },
-      { key: 'mo_pest_control_certificate', label: 'Pest control certificate if required by contract', tag: 'ME' },
+      { key: 'mo_pest_control_certificate', label: 'Pest control certificate if required by contract' },
     ],
   },
   {
     title: 'Deposit & Finances',
     fields: [
-      { key: 'mo_deposit_refund_agreed', label: 'Security deposit refund timeline agreed in writing', tag: 'ME' },
-      { key: 'mo_itemised_deductions_requested', label: 'Itemised deductions list requested if any deductions made', tag: 'ME' },
-      { key: 'mo_dispute_raised_rera', label: 'Dispute raised via RERA Rental Disputes Centre if needed', tag: 'ME' },
-      { key: 'mo_post_dated_cheques_returned', label: 'Post-dated cheques returned or confirmed cancelled', tag: 'ME' },
+      { key: 'mo_deposit_refund_agreed', label: 'Security deposit refund timeline agreed in writing' },
+      { key: 'mo_itemised_deductions_requested', label: 'Itemised deductions list requested if any deductions made' },
+      { key: 'mo_dispute_raised_rera', label: 'Dispute raised via RERA Rental Disputes Centre if needed' },
+      { key: 'mo_post_dated_cheques_returned', label: 'Post-dated cheques returned or confirmed cancelled' },
     ],
   },
   {
@@ -110,12 +114,45 @@ const MOVE_OUT_SECTIONS = [
     fields: [
       { key: 'mo_mail_redirect_updated', label: 'Mail redirect / PO Box updated' },
       { key: 'mo_address_updated_employer', label: 'Address updated with employer, bank, insurance' },
-      { key: 'mo_vehicle_registration_updated', label: 'Vehicle registration address updated (RTA / traffic dept)', tag: 'ME' },
+      { key: 'mo_vehicle_registration_updated', label: 'Vehicle registration address updated (RTA / traffic dept)' },
       { key: 'mo_school_healthcare_updated', label: 'School / healthcare records updated if applicable' },
-      { key: 'mo_move_out_slot_confirmed', label: 'Confirm building move-out slot and lift booking', tag: 'ME' },
+      { key: 'mo_move_out_slot_confirmed', label: 'Confirm building move-out slot and lift booking' },
     ],
   },
 ];
+
+// ─── Date helpers (DD-MM-YYYY) ────────────────────────────────────────────────
+function formatDateInput(raw: string): string {
+  // Allow only digits and dashes, max 10 chars
+  const digits = raw.replace(/[^\d]/g, '');
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4, 8)}`;
+}
+
+function isValidDate(val: string): boolean {
+  if (!/^\d{2}-\d{2}-\d{4}$/.test(val)) return false;
+  const [dd, mm, yyyy] = val.split('-').map(Number);
+  const d = new Date(yyyy, mm - 1, dd);
+  return d.getFullYear() === yyyy && d.getMonth() === mm - 1 && d.getDate() === dd;
+}
+
+// Convert DD-MM-YYYY → YYYY-MM-DD for DB storage
+function toISODate(val: string): string | null {
+  if (!isValidDate(val)) return null;
+  const [dd, mm, yyyy] = val.split('-');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Convert YYYY-MM-DD (from DB) → DD-MM-YYYY for display
+function fromISODate(val: string): string {
+  if (!val) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(val)) {
+    const [yyyy, mm, dd] = val.split('T')[0].split('-');
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  return val;
+}
 
 // ─── Checkbox Row ─────────────────────────────────────────────────────────────
 function CheckRow({ fieldKey, label, tag, checked, onChange }: {
@@ -174,6 +211,103 @@ function CheckSection({ title, fields, formData, onChange }: {
   );
 }
 
+// ─── Media Upload Component ───────────────────────────────────────────────────
+const MAX_IMAGES = 10;
+const MAX_VIDEOS = 2;
+
+function MediaUpload({ mediaFiles, onAdd, onRemove }: {
+  mediaFiles: MediaFile[];
+  onAdd: (files: MediaFile[]) => void;
+  onRemove: (index: number) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageCount = mediaFiles.filter(m => m.type === 'image').length;
+  const videoCount = mediaFiles.filter(m => m.type === 'video').length;
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    const newMedia: MediaFile[] = [];
+    let imgCount = imageCount;
+    let vidCount = videoCount;
+
+    Array.from(files).forEach(file => {
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      if (isImage && imgCount < MAX_IMAGES) {
+        newMedia.push({ file, preview: URL.createObjectURL(file), type: 'image' });
+        imgCount++;
+      } else if (isVideo && vidCount < MAX_VIDEOS) {
+        newMedia.push({ file, preview: URL.createObjectURL(file), type: 'video' });
+        vidCount++;
+      }
+    });
+
+    if (newMedia.length > 0) onAdd(newMedia);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-border p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="block text-[11px] font-600 text-muted-foreground uppercase tracking-wider">
+          Photos &amp; Videos
+        </label>
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1"><Image size={11} /> {imageCount}/{MAX_IMAGES} images</span>
+          <span className="flex items-center gap-1"><Film size={11} /> {videoCount}/{MAX_VIDEOS} videos</span>
+        </div>
+      </div>
+
+      {/* Upload area */}
+      <div
+        className="border-2 border-dashed border-border rounded-lg p-5 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
+      >
+        <Upload size={20} className="mx-auto text-muted-foreground mb-2" />
+        <p className="text-[12px] font-600 text-foreground">Click or drag to upload</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">Up to {MAX_IMAGES} images &amp; {MAX_VIDEOS} videos</p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,video/*"
+          className="hidden"
+          onChange={e => handleFiles(e.target.files)}
+        />
+      </div>
+
+      {/* Preview grid */}
+      {mediaFiles.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+          {mediaFiles.map((m, i) => (
+            <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-secondary/30">
+              {m.type === 'image' ? (
+                <img src={m.preview} alt={`upload-${i}`} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                  <Film size={20} className="text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground truncate px-1 w-full text-center">{m.file.name}</span>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => onRemove(i)}
+                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X size={10} />
+              </button>
+              <span className={`absolute bottom-1 left-1 text-[9px] font-600 px-1 py-0.5 rounded ${m.type === 'image' ? 'bg-green-600/80 text-white' : 'bg-blue-600/80 text-white'}`}>
+                {m.type === 'image' ? 'IMG' : 'VID'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function MoveInOutClient() {
   const supabase = createClient();
@@ -201,6 +335,8 @@ export default function MoveInOutClient() {
   const [formData, setFormData] = useState<Record<string, boolean>>({});
   const [notesValue, setNotesValue] = useState('');
   const [dateValue, setDateValue] = useState('');
+  const [dateError, setDateError] = useState('');
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -260,19 +396,18 @@ export default function MoveInOutClient() {
       .then(({ data }) => {
         const records = (data || []) as MoveRecord[];
         setExistingRecords(records);
-        // Determine available mode
         const hasMoveIn = records.some(r => r.record_type === 'move_in');
         const hasMoveOut = records.some(r => r.record_type === 'move_out');
         if (!hasMoveIn) setActiveMode('move_in');
         else if (!hasMoveOut) setActiveMode('move_out');
-        else setActiveMode(null); // both exist
+        else setActiveMode(null);
         setLoadingRecords(false);
       });
   }, [selectedUnit]);
 
   // ── Initialize form when mode changes ──────────────────────────────────────
   useEffect(() => {
-    if (!activeMode) { setFormData({}); setNotesValue(''); setDateValue(''); return; }
+    if (!activeMode) { setFormData({}); setNotesValue(''); setDateValue(''); setMediaFiles([]); return; }
     const existing = existingRecords.find(r => r.record_type === activeMode);
     if (existing) {
       const data: Record<string, boolean> = {};
@@ -280,12 +415,15 @@ export default function MoveInOutClient() {
       sections.forEach(s => s.fields.forEach(f => { data[f.key] = !!existing[f.key]; }));
       setFormData(data);
       setNotesValue(existing[activeMode === 'move_in' ? 'mi_notes' : 'mo_notes'] || '');
-      setDateValue(existing[activeMode === 'move_in' ? 'mi_date' : 'mo_date'] || '');
+      const rawDate = existing[activeMode === 'move_in' ? 'mi_date' : 'mo_date'] || '';
+      setDateValue(fromISODate(rawDate));
     } else {
       setFormData({});
       setNotesValue('');
       setDateValue('');
     }
+    setMediaFiles([]);
+    setDateError('');
     setSaveError('');
     setSaveSuccess(false);
   }, [activeMode, existingRecords]);
@@ -294,12 +432,40 @@ export default function MoveInOutClient() {
     setFormData(prev => ({ ...prev, [key]: val }));
   };
 
+  const handleDateChange = (raw: string) => {
+    const formatted = formatDateInput(raw);
+    setDateValue(formatted);
+    if (formatted.length === 10 && !isValidDate(formatted)) {
+      setDateError('Please enter a valid date in DD-MM-YYYY format');
+    } else {
+      setDateError('');
+    }
+  };
+
+  const handleAddMedia = (files: MediaFile[]) => {
+    setMediaFiles(prev => [...prev, ...files]);
+  };
+
+  const handleRemoveMedia = (index: number) => {
+    setMediaFiles(prev => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index].preview);
+      updated.splice(index, 1);
+      return updated;
+    });
+  };
+
   const handleSave = async () => {
     if (!selectedUnit || !activeMode) return;
+    if (dateValue && !isValidDate(dateValue)) {
+      setDateError('Please enter a valid date in DD-MM-YYYY format');
+      return;
+    }
     setSaving(true); setSaveError(''); setSaveSuccess(false);
     const { data: { user } } = await supabase.auth.getUser();
     const notesKey = activeMode === 'move_in' ? 'mi_notes' : 'mo_notes';
     const dateKey = activeMode === 'move_in' ? 'mi_date' : 'mo_date';
+    const isoDate = dateValue ? toISODate(dateValue) : null;
     const payload: Record<string, any> = {
       record_type: activeMode,
       project_id: selectedProject,
@@ -307,22 +473,21 @@ export default function MoveInOutClient() {
       floor_id: selectedFloor,
       unit_id: selectedUnit,
       [notesKey]: notesValue || null,
-      [dateKey]: dateValue || null,
+      [dateKey]: isoDate,
       created_by: user?.id || null,
       updated_at: new Date().toISOString(),
       ...formData,
     };
     const existing = existingRecords.find(r => r.record_type === activeMode);
-    let error: any;
+    let dbError: any;
     if (existing) {
-      ({ error } = await supabase.from('move_in_out_records').update(payload).eq('id', existing.id));
+      ({ error: dbError } = await supabase.from('move_in_out_records').update(payload).eq('id', existing.id));
     } else {
-      ({ error } = await supabase.from('move_in_out_records').insert(payload));
+      ({ error: dbError } = await supabase.from('move_in_out_records').insert(payload));
     }
     setSaving(false);
-    if (error) { setSaveError(error.message); return; }
+    if (dbError) { setSaveError(dbError.message); return; }
     setSaveSuccess(true);
-    // Refresh records
     const { data: refreshed } = await supabase.from('move_in_out_records').select('*').eq('unit_id', selectedUnit);
     setExistingRecords((refreshed || []) as MoveRecord[]);
     setTimeout(() => setSaveSuccess(false), 3000);
@@ -461,7 +626,7 @@ export default function MoveInOutClient() {
                     <button
                       onClick={() => setActiveMode('move_in')}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-600 border transition-all ${
-                        activeMode === 'move_in' ?'bg-primary text-white border-primary shadow-sm' :'bg-white text-foreground border-border hover:border-primary/50'
+                        activeMode === 'move_in' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-foreground border-border hover:border-primary/50'
                       }`}
                     >
                       <LogIn size={15} /> Move In
@@ -471,7 +636,7 @@ export default function MoveInOutClient() {
                     <button
                       onClick={() => setActiveMode('move_out')}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-600 border transition-all ${
-                        activeMode === 'move_out' ?'bg-primary text-white border-primary shadow-sm' :'bg-white text-foreground border-border hover:border-primary/50'
+                        activeMode === 'move_out' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-foreground border-border hover:border-primary/50'
                       }`}
                     >
                       <LogOut size={15} /> Move Out
@@ -510,17 +675,26 @@ export default function MoveInOutClient() {
             </div>
           </div>
 
-          {/* Date field */}
+          {/* Date field — DD-MM-YYYY */}
           <div className="bg-white rounded-xl border border-border p-4">
             <label className="block text-[11px] font-600 text-muted-foreground uppercase tracking-wider mb-1.5">
               {activeMode === 'move_in' ? 'Move In Date' : 'Move Out Date'}
             </label>
             <input
-              type="date"
+              type="text"
               value={dateValue}
-              onChange={e => setDateValue(e.target.value)}
-              className="px-3.5 py-2.5 text-[13px] bg-background border border-border rounded-lg outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+              onChange={e => handleDateChange(e.target.value)}
+              placeholder="DD-MM-YYYY"
+              maxLength={10}
+              className={`px-3.5 py-2.5 text-[13px] bg-background border rounded-lg outline-none focus:ring-2 focus:ring-primary/15 transition-all w-40 ${
+                dateError ? 'border-destructive focus:border-destructive' : 'border-border focus:border-primary'
+              }`}
             />
+            {dateError && (
+              <p className="text-[11px] text-destructive mt-1 flex items-center gap-1">
+                <AlertCircle size={11} /> {dateError}
+              </p>
+            )}
           </div>
 
           {/* Checklist sections */}
@@ -533,6 +707,13 @@ export default function MoveInOutClient() {
               onChange={handleCheck}
             />
           ))}
+
+          {/* Media Upload */}
+          <MediaUpload
+            mediaFiles={mediaFiles}
+            onAdd={handleAddMedia}
+            onRemove={handleRemoveMedia}
+          />
 
           {/* Notes */}
           <div className="bg-white rounded-xl border border-border p-4">

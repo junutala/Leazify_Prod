@@ -54,6 +54,9 @@ export default function OccupancyByProjectChart() {
   const { t } = useLanguage();
   const { assignedProjectIds, authLoading } = useAuth();
 
+  // Keep ref always pointing to latest fetchData to avoid stale closure in realtime callback
+  const fetchDataRef = React.useRef<() => void>(() => {});
+
   async function fetchData() {
     // Wait for auth context to finish loading before fetching
     if (authLoading) return;
@@ -80,16 +83,22 @@ export default function OccupancyByProjectChart() {
         return;
       }
 
-      const { data: units } = await supabase
-        .from('units')
-        .select('id, status, floors(buildings(project_id))');
+      // Use leases (active) to determine occupancy — more reliable than units.status
+      const [unitsRes, leasesRes] = await Promise.all([
+        supabase.from('units').select('id, status, floors(buildings(project_id))'),
+        supabase.from('leases').select('id, unit_id, status').eq('status', 'active'),
+      ]);
+
+      const units: any[] = unitsRes.data || [];
+      const activeLeases: any[] = leasesRes.data || [];
+      const occupiedUnitIds = new Set(activeLeases.map((l) => l.unit_id).filter(Boolean));
 
       const points: ProjectOccupancy[] = projects.map((p) => {
-        const projectUnits = (units || []).filter(
+        const projectUnits = units.filter(
           (u: any) => u.floors?.buildings?.project_id === p.id
         );
         const total = projectUnits.length;
-        const occupied = projectUnits.filter((u: any) => u.status === 'occupied').length;
+        const occupied = projectUnits.filter((u: any) => occupiedUnitIds.has(u.id)).length;
         const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
         return {
           project: p.name.length > 12 ? p.name.slice(0, 11) + '…' : p.name,
@@ -107,13 +116,19 @@ export default function OccupancyByProjectChart() {
     }
   }
 
+  // Keep ref always pointing to latest fetchData
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  });
+
   useEffect(() => {
     fetchData();
 
     const channel = supabase
       .channel('occupancy-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'units' }, fetchData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'units' }, () => fetchDataRef.current())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leases' }, () => fetchDataRef.current())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => fetchDataRef.current())
       .subscribe();
 
     return () => {
