@@ -342,6 +342,15 @@ export default function CommunicationsClient() {
     setTenantFetchError('');
     setTenants([]);
 
+    console.group('[CommunicationsClient] fetchTenants()');
+    console.log('Selection state:', {
+      selectedProject,
+      selectedBuilding,
+      selectedFloor,
+      selectedUnit,
+      assignedProjectIds,
+    });
+
     try {
       // Step 1: Build lease query based on selected hierarchy
       // We need to filter leases by unit, which links to floor → building → project
@@ -349,55 +358,71 @@ export default function CommunicationsClient() {
 
       if (selectedUnit) {
         unitIds = [selectedUnit];
+        console.log('[Step 1] Unit selected directly:', unitIds);
       } else if (selectedFloor) {
-        const { data: floorUnits } = await supabase
+        const { data: floorUnits, error: floorUnitsErr } = await supabase
           .from('units')
           .select('id')
           .eq('floor_id', selectedFloor);
+        console.log('[Step 1] Units for floor', selectedFloor, '→', floorUnits, floorUnitsErr);
         unitIds = (floorUnits || []).map((u: any) => u.id);
       } else if (selectedBuilding) {
-        const { data: buildingFloors } = await supabase
+        const { data: buildingFloors, error: buildingFloorsErr } = await supabase
           .from('floors')
           .select('id')
           .eq('building_id', selectedBuilding);
+        console.log('[Step 1] Floors for building', selectedBuilding, '→', buildingFloors, buildingFloorsErr);
         const floorIds = (buildingFloors || []).map((f: any) => f.id);
         if (floorIds.length > 0) {
-          const { data: buildingUnits } = await supabase
+          const { data: buildingUnits, error: buildingUnitsErr } = await supabase
             .from('units')
             .select('id')
             .in('floor_id', floorIds);
+          console.log('[Step 1] Units for building floors', floorIds, '→', buildingUnits, buildingUnitsErr);
           unitIds = (buildingUnits || []).map((u: any) => u.id);
         } else {
           unitIds = [];
+          console.log('[Step 1] No floors found for building → unitIds = []');
         }
       } else if (selectedProject) {
-        const { data: projectBuildings } = await supabase
+        const { data: projectBuildings, error: projectBuildingsErr } = await supabase
           .from('buildings')
           .select('id')
           .eq('project_id', selectedProject);
+        console.log('[Step 1] Buildings for project', selectedProject, '→', projectBuildings, projectBuildingsErr);
         const buildingIds = (projectBuildings || []).map((b: any) => b.id);
         if (buildingIds.length > 0) {
-          const { data: projectFloors } = await supabase
+          const { data: projectFloors, error: projectFloorsErr } = await supabase
             .from('floors')
             .select('id')
             .in('building_id', buildingIds);
+          console.log('[Step 1] Floors for project buildings', buildingIds, '→', projectFloors, projectFloorsErr);
           const floorIds = (projectFloors || []).map((f: any) => f.id);
           if (floorIds.length > 0) {
-            const { data: projectUnits } = await supabase
+            const { data: projectUnits, error: projectUnitsErr } = await supabase
               .from('units')
               .select('id')
               .in('floor_id', floorIds);
+            console.log('[Step 1] Units for project floors', floorIds, '→', projectUnits, projectUnitsErr);
             unitIds = (projectUnits || []).map((u: any) => u.id);
           } else {
             unitIds = [];
+            console.log('[Step 1] No floors found for project buildings → unitIds = []');
           }
         } else {
           unitIds = [];
+          console.log('[Step 1] No buildings found for project → unitIds = []');
         }
+      } else {
+        console.log('[Step 1] No hierarchy filter — fetching all units (unitIds = null)');
       }
+
+      console.log('[Step 1] Final unitIds:', unitIds, '| count:', unitIds?.length ?? 'ALL');
 
       // If hierarchy selected but no units found, return empty
       if (unitIds !== null && unitIds.length === 0) {
+        console.warn('[Step 1] unitIds is empty — no tenants possible. Aborting.');
+        console.groupEnd();
         setTenants([]);
         setLoadingTenants(false);
         return;
@@ -436,83 +461,109 @@ export default function CommunicationsClient() {
             const assignedUnitIds = (assignedUnits || []).map((u: any) => u.id);
             if (assignedUnitIds.length > 0) {
               leaseQuery = leaseQuery.in('unit_id', assignedUnitIds);
+              console.log('[Step 2] Staff filter applied — assignedUnitIds:', assignedUnitIds);
             }
           }
         }
       }
 
       const { data: leases, error: leaseError } = await leaseQuery;
+      console.log('[Step 2] Leases query result:', { count: leases?.length ?? 0, leases, leaseError });
 
       if (leaseError) {
+        console.error('[Step 2] Lease query error:', leaseError);
         setTenantFetchError(`Failed to load leases: ${leaseError.message}`);
         setLoadingTenants(false);
+        console.groupEnd();
         return;
       }
 
       if (!leases || leases.length === 0) {
+        console.warn('[Step 2] No active leases found for the selected scope.');
         setTenants([]);
         setLoadingTenants(false);
+        console.groupEnd();
         return;
       }
 
       // Step 3: Fetch persons by lessee_person_id
       const personIds = [...new Set(leases.map((l: any) => l.lessee_person_id).filter(Boolean))];
+      console.log('[Step 3] Fetching persons for IDs:', personIds);
       const { data: persons, error: personError } = await supabase
         .from('persons')
         .select('id, name, email')
         .in('id', personIds);
+      console.log('[Step 3] Persons result:', { count: persons?.length ?? 0, persons, personError });
 
       if (personError) {
+        console.error('[Step 3] Person query error:', personError);
         setTenantFetchError(`Failed to load person details: ${personError.message}`);
         setLoadingTenants(false);
+        console.groupEnd();
         return;
       }
 
       const personMap = new Map((persons || []).map((p: any) => [p.id, p]));
+      const personsWithoutEmail = (persons || []).filter((p: any) => !p.email);
+      if (personsWithoutEmail.length > 0) {
+        console.warn('[Step 3] Persons missing email (will be skipped):', personsWithoutEmail);
+      }
 
       // Step 4: Fetch unit details with floor/building/project chain
       const leaseUnitIds = [...new Set(leases.map((l: any) => l.unit_id).filter(Boolean))];
-      const { data: unitDetails } = await supabase
+      console.log('[Step 4] Fetching unit details for IDs:', leaseUnitIds);
+      const { data: unitDetails, error: unitDetailsErr } = await supabase
         .from('units')
         .select('id, unit_name, floor_id')
         .in('id', leaseUnitIds);
+      console.log('[Step 4] Unit details:', { count: unitDetails?.length ?? 0, unitDetails, unitDetailsErr });
 
       const unitMap = new Map((unitDetails || []).map((u: any) => [u.id, u]));
 
       // Step 5: Fetch floors
       const floorIds = [...new Set((unitDetails || []).map((u: any) => u.floor_id).filter(Boolean))];
-      const { data: floorDetails } = floorIds.length > 0
+      console.log('[Step 5] Fetching floors for IDs:', floorIds);
+      const { data: floorDetails, error: floorDetailsErr } = floorIds.length > 0
         ? await supabase.from('floors').select('id, name, building_id').in('id', floorIds)
-        : { data: [] };
+        : { data: [], error: null };
+      console.log('[Step 5] Floor details:', { count: floorDetails?.length ?? 0, floorDetails, floorDetailsErr });
 
       const floorMap = new Map((floorDetails || []).map((f: any) => [f.id, f]));
 
       // Step 6: Fetch buildings
       const buildingIds = [...new Set((floorDetails || []).map((f: any) => f.building_id).filter(Boolean))];
-      const { data: buildingDetails } = buildingIds.length > 0
+      console.log('[Step 6] Fetching buildings for IDs:', buildingIds);
+      const { data: buildingDetails, error: buildingDetailsErr } = buildingIds.length > 0
         ? await supabase.from('buildings').select('id, name, project_id').in('id', buildingIds)
-        : { data: [] };
+        : { data: [], error: null };
+      console.log('[Step 6] Building details:', { count: buildingDetails?.length ?? 0, buildingDetails, buildingDetailsErr });
 
       const buildingMap = new Map((buildingDetails || []).map((b: any) => [b.id, b]));
 
       // Step 7: Fetch projects
       const projectIds = [...new Set((buildingDetails || []).map((b: any) => b.project_id).filter(Boolean))];
-      const { data: projectDetails } = projectIds.length > 0
+      console.log('[Step 7] Fetching projects for IDs:', projectIds);
+      const { data: projectDetails, error: projectDetailsErr } = projectIds.length > 0
         ? await supabase.from('projects').select('id, name').in('id', projectIds)
-        : { data: [] };
+        : { data: [], error: null };
+      console.log('[Step 7] Project details:', { count: projectDetails?.length ?? 0, projectDetails, projectDetailsErr });
 
       const projectMap = new Map((projectDetails || []).map((p: any) => [p.id, p]));
 
       // Step 8: Assemble tenant list
       const seen = new Set<string>();
       const mapped: Tenant[] = [];
+      let skippedNoPerson = 0;
+      let skippedNoEmail = 0;
+      let skippedDuplicate = 0;
 
       for (const lease of leases as any[]) {
         const person = personMap.get(lease.lessee_person_id);
-        if (!person || !person.email) continue;
+        if (!person) { skippedNoPerson++; continue; }
+        if (!person.email) { skippedNoEmail++; continue; }
 
         // Deduplicate by email
-        if (seen.has(person.email)) continue;
+        if (seen.has(person.email)) { skippedDuplicate++; continue; }
         seen.add(person.email);
 
         const unit = unitMap.get(lease.unit_id);
@@ -538,8 +589,20 @@ export default function CommunicationsClient() {
         });
       }
 
+      console.log('[Step 8] Assembly complete:', {
+        totalLeases: leases.length,
+        mappedTenants: mapped.length,
+        skippedNoPerson,
+        skippedNoEmail,
+        skippedDuplicate,
+        tenants: mapped,
+      });
+      console.groupEnd();
+
       setTenants(mapped);
     } catch (err: any) {
+      console.error('[CommunicationsClient] Unexpected error in fetchTenants:', err);
+      console.groupEnd();
       setTenantFetchError(err.message || 'Unexpected error loading tenants.');
     } finally {
       setLoadingTenants(false);
@@ -548,6 +611,7 @@ export default function CommunicationsClient() {
 
   // ── Cascade: project → buildings ───────────────────────────────────────────
   const handleProjectChange = useCallback(async (id: string) => {
+    console.log('[CommunicationsClient] handleProjectChange:', id);
     setSelectedProject(id);
     setSelectedBuilding('');
     setSelectedFloor('');
@@ -557,13 +621,15 @@ export default function CommunicationsClient() {
     setUnits([]);
     if (!id) return;
     setLoadingHierarchy(true);
-    const { data } = await supabase.from('buildings').select('id, name').eq('project_id', id).order('name');
+    const { data, error } = await supabase.from('buildings').select('id, name').eq('project_id', id).order('name');
+    console.log('[CommunicationsClient] Buildings for project', id, '→', data, error);
     if (data) setBuildings(data.map((b: any) => ({ id: b.id, name: b.name })));
     setLoadingHierarchy(false);
   }, [supabase]);
 
   // ── Cascade: building → floors ─────────────────────────────────────────────
   const handleBuildingChange = useCallback(async (id: string) => {
+    console.log('[CommunicationsClient] handleBuildingChange:', id);
     setSelectedBuilding(id);
     setSelectedFloor('');
     setSelectedUnit('');
@@ -571,19 +637,22 @@ export default function CommunicationsClient() {
     setUnits([]);
     if (!id) return;
     setLoadingHierarchy(true);
-    const { data } = await supabase.from('floors').select('id, name').eq('building_id', id).order('name');
+    const { data, error } = await supabase.from('floors').select('id, name').eq('building_id', id).order('name');
+    console.log('[CommunicationsClient] Floors for building', id, '→', data, error);
     if (data) setFloors(data.map((f: any) => ({ id: f.id, name: f.name })));
     setLoadingHierarchy(false);
   }, [supabase]);
 
   // ── Cascade: floor → units ─────────────────────────────────────────────────
   const handleFloorChange = useCallback(async (id: string) => {
+    console.log('[CommunicationsClient] handleFloorChange:', id);
     setSelectedFloor(id);
     setSelectedUnit('');
     setUnits([]);
     if (!id) return;
     setLoadingHierarchy(true);
-    const { data } = await supabase.from('units').select('id, unit_name').eq('floor_id', id).order('unit_name');
+    const { data, error } = await supabase.from('units').select('id, unit_name').eq('floor_id', id).order('unit_name');
+    console.log('[CommunicationsClient] Units for floor', id, '→', data, error);
     if (data) setUnits(data.map((u: any) => ({ id: u.id, name: u.unit_name || u.id })));
     setLoadingHierarchy(false);
   }, [supabase]);
@@ -641,6 +710,7 @@ export default function CommunicationsClient() {
     if (!body.trim()) { setSendError('Please enter an email body.'); return; }
 
     const recipients = selectedTenants.map((t) => ({ email: t.email, name: t.full_name }));
+    console.log('[CommunicationsClient] handleSend — recipients:', recipients);
     if (recipients.length === 0) { setSendError('Please select at least one recipient.'); return; }
 
     setSending(true);
