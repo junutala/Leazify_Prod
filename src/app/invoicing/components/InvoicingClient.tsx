@@ -1442,7 +1442,7 @@ function InvoiceListPanel({ refresh }: { refresh: number }) {
       .order('created_at', { ascending: false });
     if (error) setFetchError(error.message);
 
-    let invoiceList = data || [];
+    let invoiceList = (data || []) as Invoice[];
 
     // Filter by assigned projects for staff users
     if (assignedProjectIds !== null && assignedProjectIds.length > 0) {
@@ -1450,6 +1450,20 @@ function InvoiceListPanel({ refresh }: { refresh: number }) {
         const projectId = inv.units?.floors?.buildings?.project_id;
         return projectId && assignedProjectIds.includes(projectId);
       });
+    }
+
+    // Auto-mark overdue: any invoice with due_date < today that is not paid/cancelled
+    const todayStr = new Date().toISOString().split('T')[0];
+    const overdueIds = invoiceList
+      .filter(inv => inv.due_date && inv.due_date < todayStr && !['paid', 'cancelled', 'overdue'].includes(inv.status))
+      .map(inv => inv.id);
+
+    if (overdueIds.length > 0) {
+      await supabase.from('invoices').update({ status: 'overdue' }).in('id', overdueIds);
+      // Update local list to reflect new status immediately
+      invoiceList = invoiceList.map(inv =>
+        overdueIds.includes(inv.id) ? { ...inv, status: 'overdue' } : inv
+      );
     }
 
     setInvoices(invoiceList);

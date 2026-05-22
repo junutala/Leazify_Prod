@@ -94,7 +94,7 @@ export default function KpiBentoGrid() {
       // Build queries scoped to assigned units/projects
       let unitsQuery = supabase.from('units').select('id, status');
       let leasesQuery = supabase.from('leases').select('id, status, end_date, security_deposit, unit_id');
-      let invoicesQuery = supabase.from('invoices').select('id, invoice_type, status, total_amount');
+      let invoicesQuery = supabase.from('invoices').select('id, invoice_type, status, total_amount, due_date');
       let workOrdersQuery = supabase.from('work_orders').select('id, status, provider_id');
       let serviceReqQuery = supabase.from('service_requests').select('id, status');
 
@@ -152,11 +152,19 @@ export default function KpiBentoGrid() {
       ).length;
 
       const rentInvoices = invoices.filter((i) => i.invoice_type === 'rent');
-      const overdueRent = rentInvoices.filter((i) => i.status === 'overdue');
+      const overdueRent = rentInvoices.filter((i) => {
+        if (i.status === 'overdue') return true;
+        if (['paid', 'cancelled'].includes(i.status)) return false;
+        return i.due_date && i.due_date < today;
+      });
       const rentOutstandingAmt = overdueRent.reduce((s, i) => s + Number(i.total_amount || 0), 0);
 
-      const amcInvoices = invoices.filter((i) => i.invoice_type === 'amc');
-      const overdueAmc = amcInvoices.filter((i) => i.status === 'overdue');
+      const amcInvoices = invoices.filter((i) => i.invoice_type === 'amc' || i.invoice_type === 'other');
+      const overdueAmc = amcInvoices.filter((i) => {
+        if (i.status === 'overdue') return true;
+        if (['paid', 'cancelled'].includes(i.status)) return false;
+        return i.due_date && i.due_date < today;
+      });
       const amcOutstandingAmt = overdueAmc.reduce((s, i) => s + Number(i.total_amount || 0), 0);
 
       const paidInvoices = invoices.filter((i) => i.status === 'paid');
