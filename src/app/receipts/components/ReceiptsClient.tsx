@@ -8,6 +8,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Modal from '@/components/ui/Modal';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatCurrencyFull } from '@/lib/currency';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -260,9 +261,9 @@ function RecordPaymentModal({
 
         {/* Invoice summary */}
         <div className="p-3 bg-secondary/50 rounded-xl grid grid-cols-3 gap-3 text-[12px]">
-          <div><span className="text-muted-foreground block">{t.rec_invoice_total}</span><span className="font-600">AED {Number(invoice.total_amount).toLocaleString()}</span></div>
-          <div><span className="text-muted-foreground block">{t.rec_paid}</span><span className="font-600 text-green-700">AED {Number(invoice.paid_amount || 0).toLocaleString()}</span></div>
-          <div><span className="text-muted-foreground block">{t.rec_balance}</span><span className="font-700 text-primary">AED {Number(balance).toLocaleString()}</span></div>
+          <div><span className="text-muted-foreground block">{t.rec_invoice_total}</span><span className="font-600">{formatCurrencyFull(Number(invoice.total_amount), (invoice as any).units?.floors?.buildings?.projects?.currency || 'AED')}</span></div>
+          <div><span className="text-muted-foreground block">{t.rec_paid}</span><span className="font-600 text-green-700">{formatCurrencyFull(Number(invoice.paid_amount || 0), (invoice as any).units?.floors?.buildings?.projects?.currency || 'AED')}</span></div>
+          <div><span className="text-muted-foreground block">{t.rec_balance}</span><span className="font-700 text-primary">{formatCurrencyFull(Number(balance), (invoice as any).units?.floors?.buildings?.projects?.currency || 'AED')}</span></div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -446,7 +447,7 @@ function ChequeReconciliationView() {
         ].map(card => (
           <div key={card.label} className={`p-4 rounded-xl border ${card.color}`}>
             <p className="text-[11px] font-500 text-muted-foreground uppercase tracking-wider">{card.label}</p>
-            <p className={`text-[18px] font-700 mt-1 ${card.textColor}`}>AED {card.amount.toLocaleString()}</p>
+            <p className={`text-[18px] font-700 mt-1 ${card.textColor}`}>{card.amount.toLocaleString()}</p>
             <p className="text-[11px] text-muted-foreground">{payments.filter(p => card.label === t.rec_reconciled ? p.is_reconciled : card.label === t.rec_pending_recon ? !p.is_reconciled : true).length} cheque(s)</p>
           </div>
         ))}
@@ -494,7 +495,7 @@ function ChequeReconciliationView() {
                     <td className="px-3 py-2.5 font-mono">{p.cheque_number || '—'}</td>
                     <td className="px-3 py-2.5 text-muted-foreground">{p.cheque_date || '—'}</td>
                     <td className="px-3 py-2.5 text-muted-foreground">{p.bank_name || '—'}</td>
-                    <td className="px-3 py-2.5 font-600 tabular-nums">AED {Number(p.amount).toLocaleString()}</td>
+                    <td className="px-3 py-2.5 font-600 tabular-nums">{formatCurrencyFull(Number(p.amount), (p as any).invoices?.units?.floors?.buildings?.projects?.currency || 'AED')}</td>
                     <td className="px-3 py-2.5 text-muted-foreground">{p.payment_date}</td>
                     <td className="px-3 py-2.5">
                       {p.is_reconciled
@@ -572,7 +573,7 @@ function ReceiptsListView() {
       .from('invoices')
       .select(`
         *,
-        units(unit_name, unit_number, floors(name, buildings(name, projects(name, id)))),
+        units(unit_name, unit_number, floors(name, buildings(name, projects(name, id, currency)))),
         leases(persons(name))
       `)
       .in('status', ['sent', 'overdue', 'partially_paid'])
@@ -685,7 +686,7 @@ function ReceiptsListView() {
                 ].map(card => (
                   <div key={card.label} className={`p-4 rounded-xl border ${card.color}`}>
                     <p className="text-[11px] font-500 text-muted-foreground uppercase tracking-wider">{card.label}</p>
-                    <p className={`text-[18px] font-700 mt-1 ${card.textColor}`}>AED {card.amount.toLocaleString()}</p>
+                    <p className={`text-[18px] font-700 mt-1 ${card.textColor}`}>{card.amount.toLocaleString()}</p>
                   </div>
                 ))}
               </div>
@@ -702,7 +703,9 @@ function ReceiptsListView() {
                       </tr>
                     </thead>
                     <tbody>
-                      {invoices.map(inv => (
+                {invoices.map(inv => {
+                  const invCurrency = (inv as any).units?.floors?.buildings?.projects?.currency || 'AED';
+                  return (
                         <React.Fragment key={inv.id}>
                           <tr className="border-b border-border hover:bg-secondary/20 transition-colors">
                             <td className="px-2 py-2.5">
@@ -714,9 +717,9 @@ function ReceiptsListView() {
                             <td className="px-3 py-2.5 font-500">{inv.units?.unit_name || inv.units?.unit_number || '—'}</td>
                             <td className="px-3 py-2.5 text-muted-foreground">{inv.leases?.persons?.name || '—'}</td>
                             <td className="px-3 py-2.5 text-muted-foreground capitalize">{(inv.invoice_type_ext || '').replace(/_/g, ' ')}</td>
-                            <td className="px-3 py-2.5 tabular-nums">AED {Number(inv.total_amount).toLocaleString()}</td>
-                            <td className="px-3 py-2.5 tabular-nums text-green-700">AED {Number(inv.paid_amount || 0).toLocaleString()}</td>
-                            <td className="px-3 py-2.5 tabular-nums font-600 text-primary">AED {Number(inv.balance || 0).toLocaleString()}</td>
+                            <td className="px-3 py-2.5 tabular-nums">{formatCurrencyFull(Number(inv.total_amount), invCurrency)}</td>
+                            <td className="px-3 py-2.5 tabular-nums text-green-700">{formatCurrencyFull(Number(inv.paid_amount || 0), invCurrency)}</td>
+                            <td className="px-3 py-2.5 tabular-nums font-600 text-primary">{formatCurrencyFull(Number(inv.balance || 0), invCurrency)}</td>
                             <td className="px-3 py-2.5 text-muted-foreground">{inv.due_date || '—'}</td>
                             <td className="px-3 py-2.5">
                               <Badge variant={statusBadge[inv.status] as any || 'default'} size="sm">
@@ -748,7 +751,7 @@ function ReceiptsListView() {
                                     {invoicePayments[inv.id].map(p => (
                                       <div key={p.id} className="flex items-center gap-4 text-[12px] p-2 bg-white rounded-lg border border-border">
                                         <span className="font-mono text-muted-foreground">{p.receipt_number || '—'}</span>
-                                        <span className="font-600">AED {Number(p.amount).toLocaleString()}</span>
+                                        <span className="font-600">{formatCurrencyFull(Number(p.amount), invCurrency)}</span>
                                         <span className="text-muted-foreground">{p.payment_date}</span>
                                         <span className="capitalize text-muted-foreground">{(p.payment_method || '').replace(/_/g, ' ')}</span>
                                         {p.cheque_number && <span className="text-muted-foreground">Cheque: {p.cheque_number}</span>}
@@ -763,7 +766,8 @@ function ReceiptsListView() {
                             </tr>
                           )}
                         </React.Fragment>
-                      ))}
+                      );
+                    })}
                     </tbody>
                   </table>
                 </div>

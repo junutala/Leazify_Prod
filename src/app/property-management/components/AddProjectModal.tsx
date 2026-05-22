@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { Loader2, MapPin, Navigation, Map, X, Check } from 'lucide-react';
+import { Loader2, MapPin, Navigation, Map, X, Check, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import Modal from '@/components/ui/Modal';
 import { logAuditEvent } from '@/lib/auditLog';
 import { useAuth } from '@/contexts/AuthContext';
+import { CURRENCY_LIST, COUNTRY_DEFAULT_CURRENCY, isCurrencyMismatch, getCurrencyMismatchMessage } from '@/lib/currency';
 
 interface AddProjectValues {
   projectName: string;
@@ -26,6 +27,7 @@ interface AddProjectValues {
   turnoverVatPct: number;
   amcVatPct: number;
   miscVatPct: number;
+  currency: string;
 }
 
 const usageTypes = ['Office', 'Retail', 'Mall', 'Residential'];
@@ -226,6 +228,7 @@ export default function AddProjectModal({ open, onClose, onSaved }: AddProjectMo
   const [saveError, setSaveError] = useState('');
   const [geoLoading, setGeoLoading] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [currencyMismatch, setCurrencyMismatch] = useState('');
   const supabase = createClient();
   const { session } = useAuth();
 
@@ -236,15 +239,36 @@ export default function AddProjectModal({ open, onClose, onSaved }: AddProjectMo
     reset,
     setValue,
     formState: { errors },
-  } = useForm<AddProjectValues>({ defaultValues: { vatRegistration: false, numberOfBuildings: 1, rentVatPct: 5, sdVatPct: 0, turnoverVatPct: 5, amcVatPct: 5, miscVatPct: 5 } });
+  } = useForm<AddProjectValues>({ defaultValues: { vatRegistration: false, numberOfBuildings: 1, rentVatPct: 5, sdVatPct: 0, turnoverVatPct: 5, amcVatPct: 5, miscVatPct: 5, currency: 'AED' } });
 
   const vatEnabled = watch('vatRegistration');
   const selectedCountry = watch('country');
   const selectedCity = watch('city');
   const watchedLat = watch('latitude');
   const watchedLng = watch('longitude');
+  const watchedCurrency = watch('currency');
 
   const getCities = () => selectedCountry ? (countryCityMap[selectedCountry] || []) : [];
+
+  // Auto-suggest currency when country changes
+  useEffect(() => {
+    if (selectedCountry) {
+      const defaultCurrency = COUNTRY_DEFAULT_CURRENCY[selectedCountry] ?? 'AED';
+      setValue('currency', defaultCurrency);
+      setCurrencyMismatch('');
+    }
+  }, [selectedCountry, setValue]);
+
+  // Check currency mismatch when currency changes
+  useEffect(() => {
+    if (selectedCountry && watchedCurrency) {
+      if (isCurrencyMismatch(selectedCountry, watchedCurrency)) {
+        setCurrencyMismatch(getCurrencyMismatchMessage(selectedCountry, watchedCurrency));
+      } else {
+        setCurrencyMismatch('');
+      }
+    }
+  }, [watchedCurrency, selectedCountry]);
 
   // Determine map center based on selected city/country
   const getMapCenter = (): [number, number] => {
@@ -283,6 +307,7 @@ export default function AddProjectModal({ open, onClose, onSaved }: AddProjectMo
       vat_registered: data.vatRegistration,
       vat_number: data.vatRegistration ? data.vatNumber : null,
       status: 'active',
+      currency: data.currency || 'AED',
     };
 
     // Prefer session from AuthContext; fall back to getSession() on the local client
@@ -437,6 +462,27 @@ export default function AddProjectModal({ open, onClose, onSaved }: AddProjectMo
                   {errors.city && <p className="mt-1 text-[12px] text-destructive">{errors.city.message}</p>}
                   {!selectedCountry && <p className="mt-1 text-[11px] text-muted-foreground">Select a country first</p>}
                 </div>
+              </div>
+
+              {/* Currency Selector */}
+              <div>
+                <label className="block text-[13px] font-500 text-foreground mb-1.5">Project Currency *</label>
+                <select className={inputCls()} {...register('currency', { required: true })}>
+                  {CURRENCY_LIST.map(c => (
+                    <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                  ))}
+                </select>
+                {currencyMismatch && (
+                  <div className="mt-2 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-[12px] text-amber-700">{currencyMismatch}</p>
+                  </div>
+                )}
+                {!currencyMismatch && watchedCurrency && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    All invoices, receipts, and reports for this project will use {watchedCurrency}.
+                  </p>
+                )}
               </div>
 
               {/* Geo Coordinates */}
