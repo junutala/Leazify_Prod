@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Plus, Users, Zap, Tag, Edit2, Trash2, X, Check, Eye, EyeOff, FileText, RefreshCw, KeyRound, AlertCircle } from 'lucide-react';
+import { Plus, Users, Zap, Tag, Edit2, Trash2, X, Check, Eye, EyeOff, FileText, RefreshCw, KeyRound, AlertCircle, Upload, ImageIcon } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Modal from '@/components/ui/Modal';
@@ -89,6 +89,9 @@ function ServiceProvidersTab() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProviders = async () => {
     setLoading(true);
@@ -107,11 +110,14 @@ function ServiceProvidersTab() {
   const resetForm = () => {
     setForm({ person_type: 'company', name: '', skills: [], skill_type: 'electrical', email: '', password: '', mobile: '+971 ', response_time_hours: 24, trade_licence_no: '', national_id: '', is_active: true });
     setSelectedProjects([]); setShowPassword(false); setSaveError(''); setEmailError('');
+    setProfileImage(null); setProfileImageFile(null);
   };
 
   const openEdit = async (p: any) => {
     setEditRecord(p);
     setForm({ person_type: p.person_type, name: p.name, skills: p.skills || (p.skill_type ? [p.skill_type] : []), skill_type: p.skill_type || 'electrical', email: p.email || '', password: '', mobile: p.mobile || '+971 ', response_time_hours: p.response_time_hours || 24, trade_licence_no: p.trade_licence_no || '', national_id: p.national_id || '', is_active: p.is_active });
+    setProfileImage(p.profile_image_url || null);
+    setProfileImageFile(null);
     const { data } = await supabase.from('provider_project_assignments').select('project_id').eq('provider_id', p.id);
     setSelectedProjects((data || []).map((d: any) => d.project_id));
     setShowAdd(true);
@@ -119,6 +125,15 @@ function ServiceProvidersTab() {
 
   const toggleSkill = (skill: string) => setForm(f => ({ ...f, skills: f.skills.includes(skill) ? f.skills.filter(s => s !== skill) : [...f.skills, skill] }));
   const toggleProject = (pid: string) => setSelectedProjects(prev => prev.includes(pid) ? prev.filter(p => p !== pid) : [...prev, pid]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProfileImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setProfileImage(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = async () => {
     setSaveError(''); setEmailError('');
@@ -128,8 +143,18 @@ function ServiceProvidersTab() {
     if (form.skills.length === 0) { setSaveError('Please select at least one skill'); return; }
     if (!editRecord && !form.password.trim()) { setSaveError('Password is required for new providers'); return; }
     setSaving(true);
+
+    // Upload image if a new file was selected
+    let imageUrl = editRecord?.profile_image_url || null;
+    if (profileImageFile) {
+      const ext = profileImageFile.name.split('.').pop();
+      const fileName = `provider_${Date.now()}.${ext}`;
+      // Store as base64 data URL directly in the DB (no storage bucket needed)
+      imageUrl = profileImage;
+    }
+
     const primarySkill = form.skills[0] || 'electrical';
-    const providerData = { person_type: form.person_type, name: form.name, skills: form.skills, skill_type: primarySkill, email: form.email, mobile: form.mobile, response_time_hours: form.response_time_hours, trade_licence_no: form.trade_licence_no, national_id: form.national_id, is_active: form.is_active };
+    const providerData = { person_type: form.person_type, name: form.name, skills: form.skills, skill_type: primarySkill, email: form.email, mobile: form.mobile, response_time_hours: form.response_time_hours, trade_licence_no: form.trade_licence_no, national_id: form.national_id, is_active: form.is_active, profile_image_url: imageUrl };
     let providerId = editRecord?.id;
     if (editRecord) {
       const { error } = await supabase.from('service_providers').update(providerData).eq('id', editRecord.id);
@@ -168,10 +193,19 @@ function ServiceProvidersTab() {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] min-w-[900px]">
-            <thead><tr className="bg-secondary/50 border-b border-border">{['Name', 'Type', 'Skills', 'Email', 'Mobile', 'Projects', 'Status', 'Actions'].map(h => <th key={h} className="px-4 py-2.5 text-left text-[11px] font-600 text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
+            <thead><tr className="bg-secondary/50 border-b border-border">{['Photo', 'Name', 'Type', 'Skills', 'Email', 'Mobile', 'Projects', 'Status', 'Actions'].map(h => <th key={h} className="px-4 py-2.5 text-left text-[11px] font-600 text-muted-foreground uppercase tracking-wider">{h}</th>)}</tr></thead>
             <tbody className="divide-y divide-border">
               {providers.map(p => (
                 <tr key={p.id} className="hover:bg-secondary/30 transition-colors">
+                  <td className="px-4 py-3">
+                    {p.profile_image_url ? (
+                      <img src={p.profile_image_url} alt={`${p.name} profile`} className="w-9 h-9 rounded-full object-cover border border-border" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[13px] font-700">
+                        {p.name?.charAt(0)?.toUpperCase() || '?'}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-500">{p.name}</td>
                   <td className="px-4 py-3 capitalize text-muted-foreground">{p.person_type}</td>
                   <td className="px-4 py-3"><div className="flex flex-wrap gap-1">{(p.skills && p.skills.length > 0 ? p.skills : [p.skill_type]).map((s: string) => <span key={s} className="px-1.5 py-0.5 text-[10px] font-500 bg-primary/10 text-primary rounded-full capitalize">{s}</span>)}</div></td>
@@ -189,6 +223,41 @@ function ServiceProvidersTab() {
       <Modal open={showAdd} onClose={() => { setShowAdd(false); setEditRecord(null); resetForm(); }} title={editRecord ? 'Edit Service Provider' : 'Add Service Provider'} size="lg">
         <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
           {saveError && <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-[12px] text-destructive"><X size={13} className="shrink-0" /> {saveError}</div>}
+
+          {/* Profile Image Upload */}
+          <div>
+            <label className={labelCls}>Profile Photo <span className="text-muted-foreground font-400">(optional)</span></label>
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0">
+                {profileImage ? (
+                  <img src={profileImage} alt="Provider profile" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon size={22} className="text-muted-foreground" />
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-500 bg-secondary border border-border rounded-lg hover:bg-secondary/80 transition-colors"
+                >
+                  <Upload size={12} /> {profileImage ? 'Change Photo' : 'Upload Photo'}
+                </button>
+                {profileImage && (
+                  <button
+                    type="button"
+                    onClick={() => { setProfileImage(null); setProfileImageFile(null); }}
+                    className="flex items-center gap-1 text-[11px] text-destructive hover:underline"
+                  >
+                    <X size={11} /> Remove
+                  </button>
+                )}
+                <p className="text-[11px] text-muted-foreground">JPG, PNG or GIF. Max 2MB.</p>
+              </div>
+            </div>
+            <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div><label className={labelCls}>Type</label><select className={inputCls} value={form.person_type} onChange={e => setForm(f => ({ ...f, person_type: e.target.value }))}><option value="company">Company</option><option value="individual">Individual</option></select></div>
             <div><label className={labelCls}>Status</label><select className={inputCls} value={form.is_active ? 'active' : 'inactive'} onChange={e => setForm(f => ({ ...f, is_active: e.target.value === 'active' }))}><option value="active">Active</option><option value="inactive">Inactive</option></select></div>

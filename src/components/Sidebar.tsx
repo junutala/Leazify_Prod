@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import AppLogo from '@/components/ui/AppLogo';
-import { LayoutDashboard, Building2, FileText, DollarSign, Wrench, Settings, ChevronLeft, ChevronRight, Bell, LogOut, BarChart3, Upload, ListChecks, Database, Users, RefreshCw, Mail, KeyRound, HardHat, ClipboardList, LineChart, Receipt, UserCog, Home, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Building2, FileText, DollarSign, Wrench, Settings, ChevronLeft, ChevronRight, Bell, LogOut, BarChart3, Upload, ListChecks, Database, Users, RefreshCw, Mail, KeyRound, HardHat, ClipboardList, LineChart, Receipt, UserCog, Home, Menu, X, ArrowLeftRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
@@ -31,6 +31,7 @@ const navItems: NavItem[] = [
   { id: 'nav-assignment', labelKey: 'sidebar_assignment', icon: <Users size={18} />, href: '/project-assignment', group: 'main' },
   { id: 'nav-leasing', labelKey: 'sidebar_leasing', icon: <FileText size={18} />, href: '/leasing', group: 'main' },
   { id: 'nav-renewals', labelKey: 'sidebar_renewals', icon: <RefreshCw size={18} />, href: '/lease-renewals', group: 'main' },
+  { id: 'nav-move-in-out', labelKey: 'sidebar_move_in_out', icon: <ArrowLeftRight size={18} />, href: '/move-in-out', group: 'main' },
   { id: 'nav-invoicing', labelKey: 'sidebar_invoicing', icon: <DollarSign size={18} />, href: '/invoicing', group: 'main' },
   { id: 'nav-receipts', labelKey: 'sidebar_receipts', icon: <Receipt size={18} />, href: '/receipts', group: 'main' },
   { id: 'nav-communications', labelKey: 'sidebar_communications', icon: <Mail size={18} />, href: '/communications', group: 'main' },
