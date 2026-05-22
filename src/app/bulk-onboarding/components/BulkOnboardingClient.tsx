@@ -202,14 +202,36 @@ export default function BulkOnboardingClient() {
             .single();
           if (!bldg) throw new Error(`Building "${row.building_name}" not found in project "${row.project_name}"`);
 
-          const { error } = await supabase.from('floors').insert({
-            building_id: bldg.id,
-            name: row.name,
-            description: row.description || null,
-            number_of_units: parseInt(row.number_of_units) || 0,
-            usage_type: (row.usage_type || 'office').toLowerCase(),
-          });
-          if (error) throw error;
+          // Check if a floor with this name already exists in this building
+          const { data: existingFloor } = await supabase
+            .from('floors')
+            .select('id')
+            .eq('building_id', bldg.id)
+            .ilike('name', row.name)
+            .maybeSingle();
+
+          if (existingFloor) {
+            // Update the existing floor record
+            const { error } = await supabase
+              .from('floors')
+              .update({
+                description: row.description || null,
+                number_of_units: parseInt(row.number_of_units) || 0,
+                usage_type: (row.usage_type || 'office').toLowerCase(),
+              })
+              .eq('id', existingFloor.id);
+            if (error) throw error;
+          } else {
+            // Insert a new floor record
+            const { error } = await supabase.from('floors').insert({
+              building_id: bldg.id,
+              name: row.name,
+              description: row.description || null,
+              number_of_units: parseInt(row.number_of_units) || 0,
+              usage_type: (row.usage_type || 'office').toLowerCase(),
+            });
+            if (error) throw error;
+          }
         } else if (type === 'units') {
           // Require project_name + building_name + floor_name for unambiguous lookup
           if (!row.project_name) throw new Error(`Row ${i + 2}: project_name is required`);
