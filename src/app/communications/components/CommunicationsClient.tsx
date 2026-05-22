@@ -10,6 +10,7 @@ import {
 import Badge from '@/components/ui/Badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -335,6 +336,9 @@ export default function CommunicationsClient() {
     if (data) setProjects(data.map((p: any) => ({ id: p.id, name: p.name })));
     setLoadingHierarchy(false);
   }, [supabase, assignedProjectIds]);
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('communications', fetchProjects);
 
   useEffect(() => { fetchProjects(); }, [fetchProjects]);
 

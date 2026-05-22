@@ -9,6 +9,7 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Modal from '@/components/ui/Modal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 interface WorkOrder {
   id: string;
@@ -422,6 +423,9 @@ export default function WorkOrdersClient() {
     setWorkOrders(data || []);
     setLoading(false);
   }, [assignedProjectIds]);
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('work-orders', fetchData);
 
   useEffect(() => {
     fetchData();

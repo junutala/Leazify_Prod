@@ -7,6 +7,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Badge from '@/components/ui/Badge';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 interface AuditLog {
   id: string;
@@ -208,6 +209,9 @@ export default function AuditLogClient() {
     setLogs(data || []);
     setLoading(false);
   }, [filterEntity, filterAction, filterDateFrom, filterDateTo]);
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('audit-log', fetchLogs);
 
   useEffect(() => {
     fetchLogs();

@@ -6,6 +6,7 @@ import { Building2, AlertTriangle, FileText, Clock, Wrench, MessageSquare, Dolla
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 interface KpiData {
   occupancyPct: string;
@@ -218,6 +219,9 @@ export default function KpiBentoGrid() {
   useEffect(() => {
     fetchKpisRef.current = fetchKpis;
   });
+
+  // Refetch on route change
+  useAutoRefresh('kpi-grid', () => fetchKpisRef.current());
 
   useEffect(() => {
     fetchKpis();

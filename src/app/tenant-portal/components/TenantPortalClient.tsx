@@ -10,6 +10,7 @@ import {
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -782,6 +783,9 @@ export default function TenantPortalClient({ mimicPersonId }: { mimicPersonId?: 
       setServiceProviders([]);
     }
   };
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('tenant-portal', loadData);
 
   useEffect(() => {
     loadData();

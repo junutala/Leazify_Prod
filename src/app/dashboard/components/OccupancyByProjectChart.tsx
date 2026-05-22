@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 interface ProjectOccupancy {
   project: string;
@@ -120,6 +121,9 @@ export default function OccupancyByProjectChart() {
   useEffect(() => {
     fetchDataRef.current = fetchData;
   });
+
+  // Refetch on route change
+  useAutoRefresh('occupancy-chart', () => fetchDataRef.current());
 
   useEffect(() => {
     fetchData();

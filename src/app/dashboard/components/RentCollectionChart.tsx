@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 
 interface ChartPoint {
   week: string;
@@ -128,6 +129,9 @@ export default function RentCollectionChart() {
   useEffect(() => {
     fetchDataRef.current = fetchData;
   });
+
+  // Refetch on route change
+  useAutoRefresh('rent-collection', () => fetchDataRef.current());
 
   useEffect(() => {
     fetchData();

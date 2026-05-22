@@ -10,6 +10,7 @@ import Modal from '@/components/ui/Modal';
 import { logAuditEvent } from '@/lib/auditLog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRefresh } from '@/contexts/DataRefreshContext';
 import { formatCurrencyFull } from '@/lib/currency';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -1470,6 +1471,9 @@ function InvoiceListPanel({ refresh }: { refresh: number }) {
     setInvoices(invoiceList);
     setLoading(false);
   }, [assignedProjectIds, authLoading]);
+
+  // Refetch when navigating back to this page
+  useAutoRefresh('invoices', fetchData);
 
   useEffect(() => { fetchData(); }, [fetchData, refresh]);
 
