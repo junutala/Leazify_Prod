@@ -62,6 +62,9 @@ export default function ExpiringLeasesTable() {
   const { t } = useLanguage();
   const { assignedProjectIds, authLoading } = useAuth();
 
+  // Keep ref always pointing to latest fetchLeases to avoid stale closure in realtime callback
+  const fetchLeasesRef = React.useRef<() => void>(() => {});
+
   async function fetchLeases() {
     // Wait for auth context to finish loading before fetching
     if (authLoading) return;
@@ -108,12 +111,17 @@ export default function ExpiringLeasesTable() {
     }
   }
 
+  // Keep ref always pointing to latest fetchLeases
+  useEffect(() => {
+    fetchLeasesRef.current = fetchLeases;
+  });
+
   useEffect(() => {
     fetchLeases();
 
     const channel = supabase
       .channel('expiring-leases-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leases' }, fetchLeases)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leases' }, () => fetchLeasesRef.current())
       .subscribe();
 
     return () => {

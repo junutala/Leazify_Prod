@@ -41,6 +41,9 @@ export default function ActivityFeed() {
   const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
 
+  // Keep ref always pointing to latest fetchActivity to avoid stale closure in realtime callback
+  const fetchActivityRef = React.useRef<() => void>(() => {});
+
   function formatRelativeTime(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
@@ -85,12 +88,17 @@ export default function ActivityFeed() {
     }
   }
 
+  // Keep ref always pointing to latest fetchActivity
+  useEffect(() => {
+    fetchActivityRef.current = fetchActivity;
+  });
+
   useEffect(() => {
     fetchActivity();
 
     const channel = supabase
       .channel('activity-feed-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, fetchActivity)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, () => fetchActivityRef.current())
       .subscribe();
 
     return () => {

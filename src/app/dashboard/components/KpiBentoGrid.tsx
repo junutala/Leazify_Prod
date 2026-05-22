@@ -44,6 +44,9 @@ export default function KpiBentoGrid() {
   const { t } = useLanguage();
   const { assignedProjectIds, authLoading } = useAuth();
 
+  // Use a ref so the realtime channel always calls the latest version of fetchKpis
+  const fetchKpisRef = React.useRef<() => void>(() => {});
+
   async function fetchKpis() {
     // Wait for auth context to finish loading before fetching
     if (authLoading) return;
@@ -197,14 +200,20 @@ export default function KpiBentoGrid() {
     }
   }
 
+  // Keep ref always pointing to latest fetchKpis (captures current assignedProjectIds/authLoading)
+  useEffect(() => {
+    fetchKpisRef.current = fetchKpis;
+  });
+
   useEffect(() => {
     fetchKpis();
+    // Use ref-based callback so realtime always calls the latest fetch function
     const channel = supabase.channel('kpi-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'units' }, fetchKpis)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leases' }, fetchKpis)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, fetchKpis)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'work_orders' }, fetchKpis)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, fetchKpis)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'units' }, () => fetchKpisRef.current())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leases' }, () => fetchKpisRef.current())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchKpisRef.current())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'work_orders' }, () => fetchKpisRef.current())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_requests' }, () => fetchKpisRef.current())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [assignedProjectIds, authLoading]);

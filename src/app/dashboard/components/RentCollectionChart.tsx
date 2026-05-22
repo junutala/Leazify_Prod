@@ -69,6 +69,9 @@ export default function RentCollectionChart() {
   const [loading, setLoading] = useState(true);
   const { t } = useLanguage();
 
+  // Keep ref always pointing to latest fetchData to avoid stale closure in realtime callback
+  const fetchDataRef = React.useRef<() => void>(() => {});
+
   async function fetchData() {
     setLoading(true);
     try {
@@ -78,10 +81,10 @@ export default function RentCollectionChart() {
 
       const { data: invoices } = await supabase
         .from('invoices')
-        .select('id, invoice_type, status, total_amount, issue_date, due_date')
+        .select('id, invoice_type, status, total_amount, created_at, due_date')
         .eq('invoice_type', 'rent')
-        .gte('issue_date', fromDate)
-        .order('issue_date', { ascending: true });
+        .gte('created_at', fromDate)
+        .order('created_at', { ascending: true });
 
       if (!invoices || invoices.length === 0) {
         setChartData([]);
@@ -93,7 +96,7 @@ export default function RentCollectionChart() {
       const monthLabels: Record<string, string> = {};
 
       invoices.forEach((inv) => {
-        const d = new Date(inv.issue_date);
+        const d = new Date(inv.created_at);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
         monthLabels[key] = label;
@@ -121,12 +124,17 @@ export default function RentCollectionChart() {
     }
   }
 
+  // Keep ref always pointing to latest fetchData
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  });
+
   useEffect(() => {
     fetchData();
 
     const channel = supabase
       .channel('rent-collection-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchDataRef.current())
       .subscribe();
 
     return () => {
