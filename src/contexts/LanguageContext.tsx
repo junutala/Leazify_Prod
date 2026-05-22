@@ -155,6 +155,7 @@ interface Translations {
   sidebar_assignment: string;
   sidebar_leasing: string;
   sidebar_renewals: string;
+  sidebar_move_in_out: string;
   sidebar_invoicing: string;
   sidebar_receipts: string;
   sidebar_communications: string;
@@ -927,6 +928,7 @@ const en: Translations = {
   sidebar_assignment: 'Project Assignment',
   sidebar_leasing: 'Leasing',
   sidebar_renewals: 'Lease Renewals',
+  sidebar_move_in_out: 'Move In / Move Out',
   sidebar_invoicing: 'Invoicing',
   sidebar_receipts: 'Receipts',
   sidebar_communications: 'Communications',
@@ -1696,6 +1698,7 @@ const ar: Translations = {
   sidebar_assignment: 'تعيين المشاريع',
   sidebar_leasing: 'الإيجار',
   sidebar_renewals: 'تجديد العقود',
+  sidebar_move_in_out: 'الدخول / الخروج',
   sidebar_invoicing: 'الفوترة',
   sidebar_receipts: 'الإيصالات',
   sidebar_communications: 'المراسلات',

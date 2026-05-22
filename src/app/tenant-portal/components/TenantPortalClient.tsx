@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   Home, FileText, DollarSign, Calendar, Building2, Download, AlertCircle,
   RefreshCw, Clock, CheckCircle2, XCircle, AlertTriangle, User, Phone, Mail,
-  Wrench, Plus, ChevronDown, X, Loader2, Camera, Upload,
+  Wrench, Plus, ChevronDown, X, Loader2, Camera, Upload, HardHat,
 } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
@@ -92,6 +92,19 @@ interface ServiceRequest {
   status: string;
   created_at: string;
   units?: { unit_name: string | null; unit_number: string };
+}
+
+interface ServiceProvider {
+  id: string;
+  name: string;
+  skills: string[];
+  skill_type: string;
+  email: string | null;
+  mobile: string | null;
+  person_type: string;
+  profile_image_url: string | null;
+  response_time_hours: number;
+  is_active: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -583,7 +596,7 @@ function InvoiceRow({ inv }: { inv: Invoice }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-type Tab = 'leases' | 'invoices' | 'service-requests';
+type Tab = 'leases' | 'invoices' | 'service-requests' | 'service-providers';
 
 export default function TenantPortalClient({ mimicPersonId }: { mimicPersonId?: string }) {
   const supabase = createClient();
@@ -599,6 +612,7 @@ export default function TenantPortalClient({ mimicPersonId }: { mimicPersonId?: 
   const [selectedUnitId, setSelectedUnitId] = useState<string>('all');
   const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'pending' | 'overdue' | 'paid'>('all');
   const [showSRModal, setShowSRModal] = useState(false);
+  const [serviceProviders, setServiceProviders] = useState<ServiceProvider[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -678,7 +692,7 @@ export default function TenantPortalClient({ mimicPersonId }: { mimicPersonId?: 
             name,
             buildings (
               name,
-              projects ( name )
+              projects ( name, id )
             )
           )
         )
@@ -693,6 +707,7 @@ export default function TenantPortalClient({ mimicPersonId }: { mimicPersonId?: 
 
     // Build unique units list from leases
     const unitMap = new Map<string, UnitInfo>();
+    const projectIds = new Set<string>();
     for (const lease of leases) {
       if (lease.units?.id) {
         const u = lease.units;
@@ -706,6 +721,7 @@ export default function TenantPortalClient({ mimicPersonId }: { mimicPersonId?: 
           building_name: building?.name || '',
           project_name: project?.name || '',
         });
+        if ((project as any)?.id) projectIds.add((project as any).id);
       }
     }
     setAllUnits(Array.from(unitMap.values()));
@@ -741,6 +757,29 @@ export default function TenantPortalClient({ mimicPersonId }: { mimicPersonId?: 
       setServiceRequests((srData || []) as unknown as ServiceRequest[]);
     } else {
       setServiceRequests([]);
+    }
+
+    // Load service providers assigned to tenant's projects
+    if (projectIds.size > 0) {
+      const { data: assignmentData } = await supabase
+        .from('provider_project_assignments')
+        .select('provider_id')
+        .in('project_id', Array.from(projectIds));
+
+      const providerIds = [...new Set((assignmentData || []).map((a: any) => a.provider_id))];
+      if (providerIds.length > 0) {
+        const { data: providerData } = await supabase
+          .from('service_providers')
+          .select('id, name, skills, skill_type, email, mobile, person_type, profile_image_url, response_time_hours, is_active')
+          .in('id', providerIds)
+          .eq('is_active', true)
+          .order('name');
+        setServiceProviders((providerData || []) as ServiceProvider[]);
+      } else {
+        setServiceProviders([]);
+      }
+    } else {
+      setServiceProviders([]);
     }
   };
 
@@ -784,6 +823,7 @@ export default function TenantPortalClient({ mimicPersonId }: { mimicPersonId?: 
     { id: 'leases', label: 'My Leases', icon: <FileText size={15} />, count: activeLeases.length },
     { id: 'invoices', label: 'Invoices', icon: <DollarSign size={15} />, count: overdueInvoices.length || undefined },
     { id: 'service-requests', label: 'Service Requests', icon: <Wrench size={15} /> },
+    { id: 'service-providers', label: 'Service Providers', icon: <HardHat size={15} />, count: serviceProviders.length || undefined },
   ];
 
   if (loading) {
@@ -1100,6 +1140,72 @@ export default function TenantPortalClient({ mimicPersonId }: { mimicPersonId?: 
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Service Providers Tab ── */}
+        {activeTab === 'service-providers' && (
+          <div className="space-y-4">
+            {serviceProviders.length === 0 ? (
+              <EmptyState
+                icon={HardHat}
+                title="No service providers"
+                description="Service providers assigned to your project will appear here."
+              />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {serviceProviders.map(sp => (
+                  <div key={sp.id} className="bg-white rounded-2xl border border-border p-4 flex items-start gap-4">
+                    <div className="shrink-0">
+                      {sp.profile_image_url ? (
+                        <img
+                          src={sp.profile_image_url}
+                          alt={`${sp.name} service provider`}
+                          className="w-14 h-14 rounded-xl object-cover border border-border"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <HardHat size={22} className="text-primary" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <p className="text-[14px] font-700 text-foreground truncate">{sp.name}</p>
+                        <span className="shrink-0 text-[10px] font-600 px-2 py-0.5 bg-green-100 text-green-700 rounded-full capitalize">{sp.person_type}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {(sp.skills && sp.skills.length > 0 ? sp.skills : [sp.skill_type]).map((s: string) => (
+                          <span key={s} className="px-1.5 py-0.5 text-[10px] font-500 bg-primary/10 text-primary rounded-full capitalize">
+                            {s?.replace('_', ' ')}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="space-y-1">
+                        {sp.email && (
+                          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                            <Mail size={11} className="shrink-0" />
+                            <span className="truncate">{sp.email}</span>
+                          </div>
+                        )}
+                        {sp.mobile && (
+                          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                            <Phone size={11} className="shrink-0" />
+                            <span>{formatMobile(sp.mobile)}</span>
+                          </div>
+                        )}
+                        {sp.response_time_hours && (
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <Clock size={11} className="shrink-0" />
+                            <span>Response: {sp.response_time_hours}h</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
