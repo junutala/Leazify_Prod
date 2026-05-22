@@ -154,18 +154,18 @@ export default function KpiBentoGrid() {
         (l) => l.status === 'active' && l.end_date >= today && l.end_date <= in30Days
       ).length;
 
-      const rentInvoices = invoices.filter((i) => i.invoice_type === 'rent' && i.status !== 'draft');
+      const rentInvoices = invoices.filter((i) => i.invoice_type === 'rent' && i.status !== 'draft' && i.status !== 'cancelled');
       const overdueRent = rentInvoices.filter((i) => {
         if (i.status === 'overdue') return true;
-        if (['paid', 'cancelled'].includes(i.status)) return false;
+        if (i.status === 'paid') return false;
         return i.due_date && i.due_date < today;
       });
       const rentOutstandingAmt = overdueRent.reduce((s, i) => s + Number(i.total_amount || 0), 0);
 
-      const amcInvoices = invoices.filter((i) => (i.invoice_type === 'amc' || i.invoice_type === 'other') && i.status !== 'draft');
+      const amcInvoices = invoices.filter((i) => (i.invoice_type === 'amc' || i.invoice_type === 'other') && i.status !== 'draft' && i.status !== 'cancelled');
       const overdueAmc = amcInvoices.filter((i) => {
         if (i.status === 'overdue') return true;
-        if (['paid', 'cancelled'].includes(i.status)) return false;
+        if (i.status === 'paid') return false;
         return i.due_date && i.due_date < today;
       });
       const amcOutstandingAmt = overdueAmc.reduce((s, i) => s + Number(i.total_amount || 0), 0);

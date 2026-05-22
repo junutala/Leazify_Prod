@@ -316,6 +316,7 @@ async function fetchCollectionRatesReport(
     .select(
       'invoice_number,invoice_type_ext,status,amount,tax_amount,total_amount,due_date,created_at,units(unit_number,unit_name),tenants(full_name)'
     )
+    .not('status', 'in', '("draft","cancelled")')
     .order('created_at', { ascending: false });
 
   if (filters.dateFrom) q = q.gte('created_at', filters.dateFrom);
@@ -618,6 +619,7 @@ async function fetchInvoices(
     .select(
       'invoice_number,invoice_type_ext,status,amount,tax_amount,total_amount,vat_pct,due_date,invoice_period_start,invoice_period_end,created_at,units(unit_number,unit_name),tenants(full_name)'
     )
+    .not('status', 'in', '("draft","cancelled")')
     .order('created_at', { ascending: false });
 
   if (filters.dateFrom) q = q.gte('created_at', filters.dateFrom);
@@ -714,8 +716,8 @@ async function fetchServiceRequests(
 
 const STATUS_OPTIONS: Partial<Record<ReportType, string[]>> = {
   leases: ['pending', 'active', 'expired', 'terminated', 'renewed'],
-  invoices: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],
-  collection_rates: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],
+  invoices: ['sent', 'paid', 'overdue', 'partially_paid'],
+  collection_rates: ['sent', 'paid', 'overdue', 'partially_paid'],
   work_orders: ['draft', 'issued', 'in_progress', 'completed', 'cancelled'],
   service_requests: ['open', 'in_progress', 'completed', 'closed', 'cancelled'],
 };
