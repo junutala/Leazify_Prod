@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Mail, Send, Users, CheckCircle, Search, ChevronDown, AlertCircle, Loader2, Plus, Save, Trash2, X, BookOpen, Building2, Layers, Home, FolderOpen } from 'lucide-react';
+import {
+  Mail, Send, Users, CheckCircle, Search, ChevronDown, AlertCircle,
+  Loader2, Plus, Save, Trash2, X, BookOpen, Building2, Layers, Home,
+  FolderOpen, RefreshCw, Eye, EyeOff,
+} from 'lucide-react';
 import Badge from '@/components/ui/Badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +14,8 @@ import { useAuth } from '@/contexts/AuthContext';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Tenant {
-  id: string;
+  id: string;           // persons.id
+  lease_id: string;
   full_name: string;
   email: string;
   unit_name: string;
@@ -158,58 +163,31 @@ function TemplateManagerPanel({
   const [editBody, setEditBody] = useState('');
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    setTemplates(loadTemplates());
-  }, []);
+  useEffect(() => { setTemplates(loadTemplates()); }, []);
 
   const startEdit = (t: EmailTemplate) => {
-    setEditingId(t.id);
-    setEditName(t.name);
-    setEditSubject(t.subject);
-    setEditBody(t.body);
-    setCreating(false);
+    setEditingId(t.id); setEditName(t.name); setEditSubject(t.subject); setEditBody(t.body); setCreating(false);
   };
-
   const startCreate = () => {
-    setCreating(true);
-    setEditingId(null);
-    setEditName('');
-    setEditSubject('');
-    setEditBody('');
+    setCreating(true); setEditingId(null); setEditName(''); setEditSubject(''); setEditBody('');
   };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setCreating(false);
-  };
+  const cancelEdit = () => { setEditingId(null); setCreating(false); };
 
   const saveEdit = () => {
     if (!editName.trim() || !editSubject.trim() || !editBody.trim()) return;
     let updated: EmailTemplate[];
     if (creating) {
-      const newT: EmailTemplate = {
-        id: `tpl-${Date.now()}`,
-        name: editName.trim(),
-        subject: editSubject.trim(),
-        body: editBody.trim(),
-        created_at: new Date().toISOString(),
-      };
+      const newT: EmailTemplate = { id: `tpl-${Date.now()}`, name: editName.trim(), subject: editSubject.trim(), body: editBody.trim(), created_at: new Date().toISOString() };
       updated = [newT, ...templates];
     } else {
-      updated = templates.map(t =>
-        t.id === editingId ? { ...t, name: editName.trim(), subject: editSubject.trim(), body: editBody.trim() } : t
-      );
+      updated = templates.map(t => t.id === editingId ? { ...t, name: editName.trim(), subject: editSubject.trim(), body: editBody.trim() } : t);
     }
-    saveTemplates(updated);
-    setTemplates(updated);
-    setEditingId(null);
-    setCreating(false);
+    saveTemplates(updated); setTemplates(updated); setEditingId(null); setCreating(false);
   };
 
   const deleteTemplate = (id: string) => {
     let updated = templates.filter(t => t.id !== id);
-    saveTemplates(updated);
-    setTemplates(updated);
+    saveTemplates(updated); setTemplates(updated);
     if (editingId === id) cancelEdit();
   };
 
@@ -224,8 +202,7 @@ function TemplateManagerPanel({
             <h2 className="text-[16px] font-600 text-foreground">Email Templates</h2>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={startCreate}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-500 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">
+            <button onClick={startCreate} className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-500 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">
               <Plus size={13} /> New Template
             </button>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground transition-colors">
@@ -233,7 +210,6 @@ function TemplateManagerPanel({
             </button>
           </div>
         </div>
-
         <div className="flex flex-1 overflow-hidden">
           <div className="w-56 shrink-0 border-r border-border overflow-y-auto">
             {templates.length === 0 ? (
@@ -260,7 +236,6 @@ function TemplateManagerPanel({
               </div>
             )}
           </div>
-
           <div className="flex-1 overflow-y-auto p-5">
             {(editingId || creating) ? (
               <div className="space-y-4">
@@ -292,129 +267,11 @@ function TemplateManagerPanel({
               <div className="flex flex-col items-center justify-center h-full text-center py-10">
                 <BookOpen size={32} className="text-muted-foreground/40 mb-3" />
                 <p className="text-[13px] text-muted-foreground">Select a template to edit, or create a new one.</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Click <CheckCircle size={10} className="inline" /> to use a template in your email.</p>
               </div>
             )}
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-// ─── Hierarchy Selector ───────────────────────────────────────────────────────
-
-interface HierarchySelectorProps {
-  projects: HierarchyItem[];
-  buildings: HierarchyItem[];
-  floors: HierarchyItem[];
-  units: HierarchyItem[];
-  selectedProject: string;
-  selectedBuilding: string;
-  selectedFloor: string;
-  selectedUnit: string;
-  onProjectChange: (id: string) => void;
-  onBuildingChange: (id: string) => void;
-  onFloorChange: (id: string) => void;
-  onUnitChange: (id: string) => void;
-  loadingHierarchy: boolean;
-}
-
-function HierarchySelector({
-  projects, buildings, floors, units,
-  selectedProject, selectedBuilding, selectedFloor, selectedUnit,
-  onProjectChange, onBuildingChange, onFloorChange, onUnitChange,
-  loadingHierarchy,
-}: HierarchySelectorProps) {
-  const selectCls = 'w-full px-3 py-2 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
-
-  return (
-    <div className="px-4 pt-4 pb-3 border-b border-border space-y-3">
-      <p className="text-[11px] font-600 uppercase tracking-widest text-muted-foreground">Property Hierarchy</p>
-
-      {/* Project */}
-      <div>
-        <div className="flex items-center gap-1.5 mb-1">
-          <FolderOpen size={12} className="text-primary" />
-          <label className="text-[11px] font-500 text-muted-foreground">Project</label>
-        </div>
-        <div className="relative">
-          <select
-            value={selectedProject}
-            onChange={e => onProjectChange(e.target.value)}
-            className={selectCls}
-            disabled={loadingHierarchy}
-          >
-            <option value="">All Projects</option>
-            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        </div>
-      </div>
-
-      {/* Building */}
-      <div>
-        <div className="flex items-center gap-1.5 mb-1">
-          <Building2 size={12} className="text-primary" />
-          <label className="text-[11px] font-500 text-muted-foreground">Building</label>
-        </div>
-        <div className="relative">
-          <select
-            value={selectedBuilding}
-            onChange={e => onBuildingChange(e.target.value)}
-            className={selectCls}
-            disabled={!selectedProject || loadingHierarchy}
-          >
-            <option value="">All Buildings</option>
-            {buildings.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        </div>
-      </div>
-
-      {/* Floor */}
-      <div>
-        <div className="flex items-center gap-1.5 mb-1">
-          <Layers size={12} className="text-primary" />
-          <label className="text-[11px] font-500 text-muted-foreground">Floor</label>
-        </div>
-        <div className="relative">
-          <select
-            value={selectedFloor}
-            onChange={e => onFloorChange(e.target.value)}
-            className={selectCls}
-            disabled={!selectedBuilding || loadingHierarchy}
-          >
-            <option value="">All Floors</option>
-            {floors.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-          </select>
-          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        </div>
-      </div>
-
-      {/* Unit */}
-      <div>
-        <div className="flex items-center gap-1.5 mb-1">
-          <Home size={12} className="text-primary" />
-          <label className="text-[11px] font-500 text-muted-foreground">Unit</label>
-        </div>
-        <div className="relative">
-          <select
-            value={selectedUnit}
-            onChange={e => onUnitChange(e.target.value)}
-            className={selectCls}
-            disabled={!selectedFloor || loadingHierarchy}
-          >
-            <option value="">All Units</option>
-            {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
-          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-        </div>
-      </div>
-
-      {loadingHierarchy && (
-        <p className="text-[11px] text-muted-foreground text-center py-1">Loading hierarchy…</p>
-      )}
     </div>
   );
 }
@@ -426,9 +283,10 @@ export default function CommunicationsClient() {
   const { t, language } = useLanguage();
   const { assignedProjectIds } = useAuth();
 
-  // All tenants (from leases)
+  // Tenants
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [loadingTenants, setLoadingTenants] = useState(true);
+  const [loadingTenants, setLoadingTenants] = useState(false);
+  const [tenantFetchError, setTenantFetchError] = useState('');
 
   // Hierarchy data
   const [projects, setProjects] = useState<HierarchyItem[]>([]);
@@ -447,7 +305,7 @@ export default function CommunicationsClient() {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [searchTenant, setSearchTenant] = useState('');
-  const [tenantsExpanded, setTenantsExpanded] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Template manager
   const [showTemplates, setShowTemplates] = useState(false);
@@ -457,86 +315,236 @@ export default function CommunicationsClient() {
   const [sendResult, setSendResult] = useState<SendResult | null>(null);
   const [sendError, setSendError] = useState('');
 
-  // ── Fetch all tenants ──────────────────────────────────────────────────────
-  const fetchTenants = useCallback(async () => {
-    setLoadingTenants(true);
-    const { data, error } = await supabase
-      .from('leases')
-      .select(`
-        id,
-        status,
-        persons:tenant_id ( id, name, email ),
-        units:unit_id (
-          id,
-          unit_name,
-          floors (
-            id,
-            floor_name,
-            buildings (
-              id,
-              building_name,
-              projects ( id, name )
-            )
-          )
-        )
-      `)
-      .in('status', ['active', 'pending']);
-
-    if (!error && data) {
-      const mapped: Tenant[] = data
-        .filter((l: any) => l.persons?.email)
-        .map((l: any) => ({
-          id: l.persons.id,
-          full_name: l.persons.name || 'Unknown',
-          email: l.persons.email,
-          unit_name: l.units?.unit_name || '—',
-          floor_name: l.units?.floors?.floor_name || '—',
-          building_name: l.units?.floors?.buildings?.building_name || '—',
-          project_name: l.units?.floors?.buildings?.projects?.name || '—',
-          project_id: l.units?.floors?.buildings?.projects?.id || '',
-          building_id: l.units?.floors?.buildings?.id || '',
-          floor_id: l.units?.floors?.id || '',
-          unit_id: l.units?.id || '',
-          lease_status: l.status,
-          selected: false,
-        }));
-      // Deduplicate by email
-      const seen = new Set<string>();
-      const unique = mapped.filter((t) => {
-        if (seen.has(t.email)) return false;
-        seen.add(t.email);
-        return true;
-      });
-      setTenants(unique);
-    }
-    setLoadingTenants(false);
-  }, [supabase]);
-
-  // ── Fetch projects (filtered by assignedProjectIds for staff users) ────────
+  // ── Fetch projects ─────────────────────────────────────────────────────────
   const fetchProjects = useCallback(async () => {
     setLoadingHierarchy(true);
     let query = supabase.from('projects').select('id, name').order('name');
-
-    // If assignedProjectIds is a non-null array, filter to only those projects
-    // null means full access (superadmin/admin), empty array means no access
     if (assignedProjectIds !== null && assignedProjectIds.length > 0) {
       query = query.in('id', assignedProjectIds);
     } else if (assignedProjectIds !== null && assignedProjectIds.length === 0) {
-      // Staff with no project assignments — show nothing
       setProjects([]);
       setLoadingHierarchy(false);
       return;
     }
-
     const { data } = await query;
     if (data) setProjects(data.map((p: any) => ({ id: p.id, name: p.name })));
     setLoadingHierarchy(false);
   }, [supabase, assignedProjectIds]);
 
-  useEffect(() => {
-    fetchTenants();
-    fetchProjects();
-  }, [fetchTenants, fetchProjects]);
+  useEffect(() => { fetchProjects(); }, [fetchProjects]);
+
+  // ── Fetch tenants: flat two-step approach ──────────────────────────────────
+  // Step 1: fetch leases (with unit_id) filtered by hierarchy
+  // Step 2: fetch persons by lessee_person_id
+  // Step 3: fetch unit/floor/building/project names
+  const fetchTenants = useCallback(async () => {
+    setLoadingTenants(true);
+    setTenantFetchError('');
+    setTenants([]);
+
+    try {
+      // Step 1: Build lease query based on selected hierarchy
+      // We need to filter leases by unit, which links to floor → building → project
+      let unitIds: string[] | null = null;
+
+      if (selectedUnit) {
+        unitIds = [selectedUnit];
+      } else if (selectedFloor) {
+        const { data: floorUnits } = await supabase
+          .from('units')
+          .select('id')
+          .eq('floor_id', selectedFloor);
+        unitIds = (floorUnits || []).map((u: any) => u.id);
+      } else if (selectedBuilding) {
+        const { data: buildingFloors } = await supabase
+          .from('floors')
+          .select('id')
+          .eq('building_id', selectedBuilding);
+        const floorIds = (buildingFloors || []).map((f: any) => f.id);
+        if (floorIds.length > 0) {
+          const { data: buildingUnits } = await supabase
+            .from('units')
+            .select('id')
+            .in('floor_id', floorIds);
+          unitIds = (buildingUnits || []).map((u: any) => u.id);
+        } else {
+          unitIds = [];
+        }
+      } else if (selectedProject) {
+        const { data: projectBuildings } = await supabase
+          .from('buildings')
+          .select('id')
+          .eq('project_id', selectedProject);
+        const buildingIds = (projectBuildings || []).map((b: any) => b.id);
+        if (buildingIds.length > 0) {
+          const { data: projectFloors } = await supabase
+            .from('floors')
+            .select('id')
+            .in('building_id', buildingIds);
+          const floorIds = (projectFloors || []).map((f: any) => f.id);
+          if (floorIds.length > 0) {
+            const { data: projectUnits } = await supabase
+              .from('units')
+              .select('id')
+              .in('floor_id', floorIds);
+            unitIds = (projectUnits || []).map((u: any) => u.id);
+          } else {
+            unitIds = [];
+          }
+        } else {
+          unitIds = [];
+        }
+      }
+
+      // If hierarchy selected but no units found, return empty
+      if (unitIds !== null && unitIds.length === 0) {
+        setTenants([]);
+        setLoadingTenants(false);
+        return;
+      }
+
+      // Step 2: Fetch active leases
+      let leaseQuery = supabase
+        .from('leases')
+        .select('id, unit_id, lessee_person_id, status')
+        .eq('status', 'active')
+        .not('lessee_person_id', 'is', null);
+
+      if (unitIds !== null) {
+        leaseQuery = leaseQuery.in('unit_id', unitIds);
+      }
+
+      // Also apply project filter for staff users
+      if (assignedProjectIds !== null && assignedProjectIds.length > 0 && unitIds === null) {
+        // Need to get all unit IDs for assigned projects
+        const { data: assignedBuildings } = await supabase
+          .from('buildings')
+          .select('id')
+          .in('project_id', assignedProjectIds);
+        const assignedBuildingIds = (assignedBuildings || []).map((b: any) => b.id);
+        if (assignedBuildingIds.length > 0) {
+          const { data: assignedFloors } = await supabase
+            .from('floors')
+            .select('id')
+            .in('building_id', assignedBuildingIds);
+          const assignedFloorIds = (assignedFloors || []).map((f: any) => f.id);
+          if (assignedFloorIds.length > 0) {
+            const { data: assignedUnits } = await supabase
+              .from('units')
+              .select('id')
+              .in('floor_id', assignedFloorIds);
+            const assignedUnitIds = (assignedUnits || []).map((u: any) => u.id);
+            if (assignedUnitIds.length > 0) {
+              leaseQuery = leaseQuery.in('unit_id', assignedUnitIds);
+            }
+          }
+        }
+      }
+
+      const { data: leases, error: leaseError } = await leaseQuery;
+
+      if (leaseError) {
+        setTenantFetchError(`Failed to load leases: ${leaseError.message}`);
+        setLoadingTenants(false);
+        return;
+      }
+
+      if (!leases || leases.length === 0) {
+        setTenants([]);
+        setLoadingTenants(false);
+        return;
+      }
+
+      // Step 3: Fetch persons by lessee_person_id
+      const personIds = [...new Set(leases.map((l: any) => l.lessee_person_id).filter(Boolean))];
+      const { data: persons, error: personError } = await supabase
+        .from('persons')
+        .select('id, name, email')
+        .in('id', personIds);
+
+      if (personError) {
+        setTenantFetchError(`Failed to load person details: ${personError.message}`);
+        setLoadingTenants(false);
+        return;
+      }
+
+      const personMap = new Map((persons || []).map((p: any) => [p.id, p]));
+
+      // Step 4: Fetch unit details with floor/building/project chain
+      const leaseUnitIds = [...new Set(leases.map((l: any) => l.unit_id).filter(Boolean))];
+      const { data: unitDetails } = await supabase
+        .from('units')
+        .select('id, unit_name, floor_id')
+        .in('id', leaseUnitIds);
+
+      const unitMap = new Map((unitDetails || []).map((u: any) => [u.id, u]));
+
+      // Step 5: Fetch floors
+      const floorIds = [...new Set((unitDetails || []).map((u: any) => u.floor_id).filter(Boolean))];
+      const { data: floorDetails } = floorIds.length > 0
+        ? await supabase.from('floors').select('id, name, building_id').in('id', floorIds)
+        : { data: [] };
+
+      const floorMap = new Map((floorDetails || []).map((f: any) => [f.id, f]));
+
+      // Step 6: Fetch buildings
+      const buildingIds = [...new Set((floorDetails || []).map((f: any) => f.building_id).filter(Boolean))];
+      const { data: buildingDetails } = buildingIds.length > 0
+        ? await supabase.from('buildings').select('id, name, project_id').in('id', buildingIds)
+        : { data: [] };
+
+      const buildingMap = new Map((buildingDetails || []).map((b: any) => [b.id, b]));
+
+      // Step 7: Fetch projects
+      const projectIds = [...new Set((buildingDetails || []).map((b: any) => b.project_id).filter(Boolean))];
+      const { data: projectDetails } = projectIds.length > 0
+        ? await supabase.from('projects').select('id, name').in('id', projectIds)
+        : { data: [] };
+
+      const projectMap = new Map((projectDetails || []).map((p: any) => [p.id, p]));
+
+      // Step 8: Assemble tenant list
+      const seen = new Set<string>();
+      const mapped: Tenant[] = [];
+
+      for (const lease of leases as any[]) {
+        const person = personMap.get(lease.lessee_person_id);
+        if (!person || !person.email) continue;
+
+        // Deduplicate by email
+        if (seen.has(person.email)) continue;
+        seen.add(person.email);
+
+        const unit = unitMap.get(lease.unit_id);
+        const floor = unit ? floorMap.get(unit.floor_id) : null;
+        const building = floor ? buildingMap.get(floor.building_id) : null;
+        const project = building ? projectMap.get(building.project_id) : null;
+
+        mapped.push({
+          id: person.id,
+          lease_id: lease.id,
+          full_name: person.name || 'Unknown',
+          email: person.email,
+          unit_name: unit?.unit_name || '—',
+          floor_name: floor?.name || '—',
+          building_name: building?.name || '—',
+          project_name: project?.name || '—',
+          project_id: project?.id || '',
+          building_id: building?.id || '',
+          floor_id: floor?.id || '',
+          unit_id: unit?.id || '',
+          lease_status: lease.status,
+          selected: false,
+        });
+      }
+
+      setTenants(mapped);
+    } catch (err: any) {
+      setTenantFetchError(err.message || 'Unexpected error loading tenants.');
+    } finally {
+      setLoadingTenants(false);
+    }
+  }, [supabase, selectedProject, selectedBuilding, selectedFloor, selectedUnit, assignedProjectIds]);
 
   // ── Cascade: project → buildings ───────────────────────────────────────────
   const handleProjectChange = useCallback(async (id: string) => {
@@ -549,11 +557,7 @@ export default function CommunicationsClient() {
     setUnits([]);
     if (!id) return;
     setLoadingHierarchy(true);
-    const { data } = await supabase
-      .from('buildings')
-      .select('id, name')
-      .eq('project_id', id)
-      .order('name');
+    const { data } = await supabase.from('buildings').select('id, name').eq('project_id', id).order('name');
     if (data) setBuildings(data.map((b: any) => ({ id: b.id, name: b.name })));
     setLoadingHierarchy(false);
   }, [supabase]);
@@ -567,11 +571,7 @@ export default function CommunicationsClient() {
     setUnits([]);
     if (!id) return;
     setLoadingHierarchy(true);
-    const { data } = await supabase
-      .from('floors')
-      .select('id, name')
-      .eq('building_id', id)
-      .order('name');
+    const { data } = await supabase.from('floors').select('id, name').eq('building_id', id).order('name');
     if (data) setFloors(data.map((f: any) => ({ id: f.id, name: f.name })));
     setLoadingHierarchy(false);
   }, [supabase]);
@@ -583,33 +583,15 @@ export default function CommunicationsClient() {
     setUnits([]);
     if (!id) return;
     setLoadingHierarchy(true);
-    const { data } = await supabase
-      .from('units')
-      .select('id, unit_name')
-      .eq('floor_id', id)
-      .order('unit_name');
-    if (data) setUnits(data.map((u: any) => ({ id: u.id, name: u.unit_name })));
+    const { data } = await supabase.from('units').select('id, unit_name').eq('floor_id', id).order('unit_name');
+    if (data) setUnits(data.map((u: any) => ({ id: u.id, name: u.unit_name || u.id })));
     setLoadingHierarchy(false);
   }, [supabase]);
 
-  const handleUnitChange = (id: string) => {
-    setSelectedUnit(id);
-  };
+  const handleUnitChange = (id: string) => setSelectedUnit(id);
 
-  // ── Filtered tenants based on hierarchy ───────────────────────────────────
-  const hierarchyFilteredTenants = tenants.filter((t) => {
-    // Also filter tenants by assigned projects for staff users
-    if (assignedProjectIds !== null && assignedProjectIds.length > 0) {
-      if (!assignedProjectIds.includes(t.project_id)) return false;
-    }
-    if (selectedUnit) return t.unit_id === selectedUnit;
-    if (selectedFloor) return t.floor_id === selectedFloor;
-    if (selectedBuilding) return t.building_id === selectedBuilding;
-    if (selectedProject) return t.project_id === selectedProject;
-    return true;
-  });
-
-  const filteredTenants = hierarchyFilteredTenants.filter(
+  // Search filter
+  const filteredTenants = tenants.filter(
     (t) =>
       t.full_name.toLowerCase().includes(searchTenant.toLowerCase()) ||
       t.email.toLowerCase().includes(searchTenant.toLowerCase()) ||
@@ -655,24 +637,13 @@ export default function CommunicationsClient() {
     setSendError('');
     setSendResult(null);
 
-    if (!subject.trim()) {
-      setSendError('Please enter an email subject.');
-      return;
-    }
-    if (!body.trim()) {
-      setSendError('Please enter an email body.');
-      return;
-    }
+    if (!subject.trim()) { setSendError('Please enter an email subject.'); return; }
+    if (!body.trim()) { setSendError('Please enter an email body.'); return; }
 
     const recipients = selectedTenants.map((t) => ({ email: t.email, name: t.full_name }));
-
-    if (recipients.length === 0) {
-      setSendError('Please select at least one recipient.');
-      return;
-    }
+    if (recipients.length === 0) { setSendError('Please select at least one recipient.'); return; }
 
     setSending(true);
-
     try {
       const res = await fetch('/api/communications/send', {
         method: 'POST',
@@ -684,17 +655,11 @@ export default function CommunicationsClient() {
           notificationType: 'general',
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         setSendError(data.error || 'Failed to send notifications.');
       } else {
-        setSendResult({
-          success: data.success,
-          totalRecipients: data.totalRecipients || recipients.length,
-          errors: data.errors,
-        });
+        setSendResult({ success: data.success, totalRecipients: data.totalRecipients || recipients.length, errors: data.errors });
         setTenants((prev) => prev.map((t) => ({ ...t, selected: false })));
         setSubject('');
         setBody('');
@@ -706,7 +671,7 @@ export default function CommunicationsClient() {
     }
   };
 
-  // ─── Hierarchy breadcrumb label ────────────────────────────────────────────
+  // ── Hierarchy breadcrumb ───────────────────────────────────────────────────
   const hierarchyLabel = (() => {
     const parts: string[] = [];
     if (selectedProject) parts.push(projects.find(p => p.id === selectedProject)?.name || '');
@@ -716,14 +681,13 @@ export default function CommunicationsClient() {
     return parts.filter(Boolean).join(' › ');
   })();
 
+  const selectCls = 'w-full px-3 py-2.5 text-[13px] border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div key={language} className="flex flex-col h-full min-h-screen bg-background">
       {showTemplates && (
-        <TemplateManagerPanel
-          onSelect={applyTemplate}
-          onClose={() => setShowTemplates(false)}
-        />
+        <TemplateManagerPanel onSelect={applyTemplate} onClose={() => setShowTemplates(false)} />
       )}
 
       {/* Header */}
@@ -745,238 +709,350 @@ export default function CommunicationsClient() {
       </div>
 
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-        {/* ── Left: Hierarchy + Recipient Selection ── */}
-        <div className="lg:w-[420px] shrink-0 border-b lg:border-b-0 lg:border-r border-border flex flex-col bg-white overflow-y-auto max-h-[50vh] lg:max-h-none">
 
-          {/* Hierarchy Selector */}
-          <HierarchySelector
-            projects={projects}
-            buildings={buildings}
-            floors={floors}
-            units={units}
-            selectedProject={selectedProject}
-            selectedBuilding={selectedBuilding}
-            selectedFloor={selectedFloor}
-            selectedUnit={selectedUnit}
-            onProjectChange={handleProjectChange}
-            onBuildingChange={handleBuildingChange}
-            onFloorChange={handleFloorChange}
-            onUnitChange={handleUnitChange}
-            loadingHierarchy={loadingHierarchy}
-          />
+        {/* ── Left Panel: Hierarchy + Tenants ── */}
+        <div className="lg:w-[400px] shrink-0 border-b lg:border-b-0 lg:border-r border-border flex flex-col bg-white overflow-y-auto max-h-[55vh] lg:max-h-none">
 
-          {/* Tenants section */}
-          <div>
+          {/* Step 1: Select Scope */}
+          <div className="px-4 pt-4 pb-3 border-b border-border">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[12px] font-700 uppercase tracking-widest text-muted-foreground">Step 1 — Select Scope</p>
+            </div>
+
+            {/* Project */}
+            <div className="mb-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <FolderOpen size={12} className="text-primary" />
+                <label className="text-[12px] font-500 text-foreground">Project</label>
+              </div>
+              <div className="relative">
+                <select value={selectedProject} onChange={e => handleProjectChange(e.target.value)} className={selectCls} disabled={loadingHierarchy}>
+                  <option value="">All Projects</option>
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Building */}
+            <div className="mb-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Building2 size={12} className="text-primary" />
+                <label className="text-[12px] font-500 text-foreground">Building</label>
+                {!selectedProject && <span className="text-[10px] text-muted-foreground ml-auto">Select project first</span>}
+              </div>
+              <div className="relative">
+                <select value={selectedBuilding} onChange={e => handleBuildingChange(e.target.value)} className={selectCls} disabled={!selectedProject || loadingHierarchy}>
+                  <option value="">All Buildings</option>
+                  {buildings.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+                <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Floor */}
+            <div className="mb-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Layers size={12} className="text-primary" />
+                <label className="text-[12px] font-500 text-foreground">Floor</label>
+                {!selectedBuilding && <span className="text-[10px] text-muted-foreground ml-auto">Select building first</span>}
+              </div>
+              <div className="relative">
+                <select value={selectedFloor} onChange={e => handleFloorChange(e.target.value)} className={selectCls} disabled={!selectedBuilding || loadingHierarchy}>
+                  <option value="">All Floors</option>
+                  {floors.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+                <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Unit */}
+            <div className="mb-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Home size={12} className="text-primary" />
+                <label className="text-[12px] font-500 text-foreground">Unit</label>
+                {!selectedFloor && <span className="text-[10px] text-muted-foreground ml-auto">Select floor first</span>}
+              </div>
+              <div className="relative">
+                <select value={selectedUnit} onChange={e => handleUnitChange(e.target.value)} className={selectCls} disabled={!selectedFloor || loadingHierarchy}>
+                  <option value="">All Units</option>
+                  {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+                <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Load Tenants Button */}
             <button
-              onClick={() => setTenantsExpanded(!tenantsExpanded)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/50 transition-colors"
+              onClick={fetchTenants}
+              disabled={loadingTenants}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-[13px] font-600 hover:bg-primary/90 disabled:opacity-60 transition-all"
             >
-              <div className="flex items-center gap-2">
-                <Users size={14} className="text-primary" />
-                <span className="text-[13px] font-600 text-foreground">Unit Holders</span>
-                <span className="text-[11px] text-muted-foreground">
-                  ({selectedTenants.length} selected / {hierarchyFilteredTenants.length} shown)
+              {loadingTenants ? (
+                <><Loader2 size={14} className="animate-spin" /> Loading Tenants…</>
+              ) : (
+                <><RefreshCw size={14} /> Load Tenants</>
+              )}
+            </button>
+          </div>
+
+          {/* Step 2: Select Tenants */}
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="px-4 py-3 border-b border-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users size={14} className="text-primary" />
+                  <p className="text-[12px] font-700 uppercase tracking-widest text-muted-foreground">Step 2 — Select Tenants</p>
+                </div>
+                <span className="text-[11px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                  {selectedTenants.length} / {filteredTenants.length}
                 </span>
               </div>
-              <ChevronDown size={14} className={`text-muted-foreground transition-transform ${tenantsExpanded ? 'rotate-180' : ''}`} />
-            </button>
+            </div>
 
-            {tenantsExpanded && (
-              <div className="px-4 pb-3">
-                {/* Hierarchy context label */}
-                {hierarchyLabel && (
-                  <div className="flex items-center gap-1.5 mb-2 px-2.5 py-1.5 bg-primary/5 border border-primary/15 rounded-lg">
-                    <FolderOpen size={11} className="text-primary shrink-0" />
-                    <span className="text-[11px] text-primary font-500 truncate">{hierarchyLabel}</span>
-                  </div>
-                )}
-
-                <div className="relative mb-2">
-                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    value={searchTenant}
-                    onChange={(e) => setSearchTenant(e.target.value)}
-                    placeholder="Search tenants..."
-                    className="w-full pl-8 pr-3 py-1.5 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40"
-                  />
+            <div className="px-4 py-3 flex-1 flex flex-col min-h-0">
+              {/* Scope label */}
+              {hierarchyLabel && (
+                <div className="flex items-center gap-1.5 mb-2 px-2.5 py-1.5 bg-primary/5 border border-primary/15 rounded-lg">
+                  <FolderOpen size={11} className="text-primary shrink-0" />
+                  <span className="text-[11px] text-primary font-500 truncate">{hierarchyLabel}</span>
                 </div>
+              )}
+
+              {/* Search */}
+              <div className="relative mb-2">
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={searchTenant}
+                  onChange={(e) => setSearchTenant(e.target.value)}
+                  placeholder="Search by name, email or unit..."
+                  className="w-full pl-8 pr-3 py-2 text-[12px] border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40"
+                />
+              </div>
+
+              {/* Select all / clear */}
+              {filteredTenants.length > 0 && (
                 <div className="flex items-center justify-between mb-2">
-                  <button onClick={() => selectAllFiltered(true)} className="text-[11px] text-primary hover:underline">Select all shown</button>
-                  <button onClick={() => selectAllFiltered(false)} className="text-[11px] text-muted-foreground hover:underline">Clear shown</button>
+                  <button onClick={() => selectAllFiltered(true)} className="text-[11px] text-primary hover:underline font-500">Select all ({filteredTenants.length})</button>
+                  <button onClick={() => selectAllFiltered(false)} className="text-[11px] text-muted-foreground hover:underline">Clear all</button>
                 </div>
+              )}
 
-                {loadingTenants ? (
-                  <div className="space-y-2">
+              {/* Tenant list */}
+              <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
+                {tenantFetchError ? (
+                  <div className="flex items-start gap-2 p-3 bg-destructive/8 border border-destructive/20 rounded-lg">
+                    <AlertCircle size={13} className="text-destructive shrink-0 mt-0.5" />
+                    <p className="text-[12px] text-destructive">{tenantFetchError}</p>
+                  </div>
+                ) : loadingTenants ? (
+                  <div className="space-y-2 pt-1">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-10 bg-secondary/60 rounded-lg animate-pulse" />
+                      <div key={i} className="h-14 bg-secondary/60 rounded-lg animate-pulse" />
                     ))}
                   </div>
                 ) : filteredTenants.length === 0 ? (
-                  <p className="text-[12px] text-muted-foreground text-center py-4">
-                    {hierarchyLabel ? 'No unit holders found in this selection' : 'No tenants found'}
-                  </p>
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Users size={28} className="text-muted-foreground/30 mb-2" />
+                    <p className="text-[12px] text-muted-foreground font-500">No tenants found</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {tenants.length === 0
+                        ? 'Select a scope above and click "Load Tenants"' :'No tenants match your search'}
+                    </p>
+                  </div>
                 ) : (
-                  <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
-                    {filteredTenants.map((tenant) => (
-                      <label
-                        key={tenant.id}
-                        className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-colors ${
-                          tenant.selected ? 'bg-primary/8 border border-primary/20' : 'hover:bg-secondary/60 border border-transparent'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={tenant.selected}
-                          onChange={() => toggleTenant(tenant.id)}
-                          className="mt-0.5 accent-primary shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[12px] font-500 text-foreground truncate">{tenant.full_name}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{tenant.email}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">
-                            {tenant.project_name} › {tenant.building_name} › {tenant.floor_name} › {tenant.unit_name}
-                          </p>
-                        </div>
-                        <Badge variant={tenant.lease_status === 'active' ? 'success' : 'default'} className="shrink-0 text-[9px] px-1.5 py-0.5">
-                          {tenant.lease_status}
-                        </Badge>
-                      </label>
-                    ))}
+                  filteredTenants.map((tenant) => (
+                    <label
+                      key={tenant.id}
+                      className={`flex items-start gap-2.5 p-2.5 rounded-lg cursor-pointer transition-colors ${
+                        tenant.selected ? 'bg-primary/8 border border-primary/20' : 'hover:bg-secondary/60 border border-transparent'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={tenant.selected}
+                        onChange={() => toggleTenant(tenant.id)}
+                        className="mt-0.5 accent-primary shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12px] font-600 text-foreground truncate">{tenant.full_name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{tenant.email}</p>
+                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                          {[tenant.project_name, tenant.building_name, tenant.floor_name, tenant.unit_name].filter(v => v && v !== '—').join(' › ')}
+                        </p>
+                      </div>
+                      <Badge variant="success" className="shrink-0 text-[9px] px-1.5 py-0.5">active</Badge>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Right Panel: Compose ── */}
+        <div className="flex-1 flex flex-col overflow-y-auto bg-background">
+
+          {/* Step 3 header */}
+          <div className="px-6 py-4 border-b border-border bg-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mail size={14} className="text-primary" />
+                <p className="text-[12px] font-700 uppercase tracking-widest text-muted-foreground">Step 3 — Compose Email</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setShowTemplates(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-500 text-primary border border-primary/30 bg-primary/5 rounded-lg hover:bg-primary/10 transition-all">
+                  <BookOpen size={12} /> Load Template
+                </button>
+                <button onClick={saveAsTemplate} disabled={!subject.trim() || !body.trim()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-500 text-muted-foreground border border-border rounded-lg hover:bg-secondary disabled:opacity-40 transition-all">
+                  <Save size={12} /> Save as Template
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-5 flex-1">
+            {/* Subject */}
+            <div>
+              <label className="block text-[12px] font-600 text-foreground mb-1.5">
+                Email Subject <span className="text-destructive">*</span>
+              </label>
+              <input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="e.g. Important Notice Regarding Your Tenancy"
+                className="w-full px-4 py-2.5 text-[13px] border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+              />
+            </div>
+
+            {/* Body */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[12px] font-600 text-foreground">
+                  Email Body <span className="text-destructive">*</span>
+                </label>
+                <span className="text-[11px] text-muted-foreground">
+                  Use <code className="bg-secondary px-1 rounded text-[10px]">{'{{NAME}}'}</code> to personalize
+                </span>
+              </div>
+              <textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                rows={12}
+                placeholder={`Dear {{NAME}},\n\nWrite your message here...\n\nBest regards,\nProperties Management Team`}
+                className="w-full px-4 py-3 text-[13px] border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white resize-none leading-relaxed"
+              />
+            </div>
+
+            {/* Preview toggle */}
+            {(subject || body) && (
+              <div>
+                <button
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="flex items-center gap-1.5 text-[12px] text-primary hover:underline mb-2"
+                >
+                  {showPreview ? <EyeOff size={13} /> : <Eye size={13} />}
+                  {showPreview ? 'Hide Preview' : 'Show Preview'}
+                </button>
+                {showPreview && (
+                  <div className="bg-white border border-border rounded-xl p-4">
+                    <div className="border-b border-border pb-2 mb-3">
+                      <p className="text-[11px] text-muted-foreground">Subject: <span className="text-foreground font-500">{subject || '—'}</span></p>
+                    </div>
+                    <div className="whitespace-pre-wrap text-[13px] text-foreground leading-relaxed">
+                      {body.replace(/{{NAME}}/g, '[Recipient Name]') || <span className="text-muted-foreground italic">No body content yet</span>}
+                    </div>
                   </div>
                 )}
               </div>
             )}
-          </div>
-        </div>
 
-        {/* ── Right: Compose ── */}
-        <div className="flex-1 flex flex-col overflow-y-auto bg-background p-6 gap-5">
-
-          {/* Subject */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[11px] font-600 uppercase tracking-widest text-muted-foreground">
-                Email Subject <span className="text-destructive">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setShowTemplates(true)}
-                  className="flex items-center gap-1 text-[11px] text-primary hover:underline">
-                  <BookOpen size={11} /> Load Template
-                </button>
-                <span className="text-muted-foreground text-[11px]">|</span>
-                <button onClick={saveAsTemplate} disabled={!subject.trim() || !body.trim()}
-                  className="flex items-center gap-1 text-[11px] text-primary hover:underline disabled:opacity-40 disabled:no-underline">
-                  <Save size={11} /> Save as Template
+            {/* Send summary + button */}
+            <div className="bg-white border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[14px] font-600 text-foreground">
+                    {selectedTenants.length === 0
+                      ? 'No recipients selected'
+                      : `${selectedTenants.length} recipient${selectedTenants.length !== 1 ? 's' : ''} selected`}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {hierarchyLabel ? `Scope: ${hierarchyLabel}` : 'Select tenants from the left panel'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleSend}
+                  disabled={sending || selectedTenants.length === 0 || !subject.trim() || !body.trim()}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-xl text-[13px] font-600 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm whitespace-nowrap"
+                >
+                  {sending ? (
+                    <><Loader2 size={15} className="animate-spin" /> Sending…</>
+                  ) : (
+                    <><Send size={15} /> Send Email</>
+                  )}
                 </button>
               </div>
-            </div>
-            <input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Enter email subject..."
-              className="w-full px-3 py-2 text-[13px] border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
-            />
-          </div>
 
-          {/* Email Body */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[11px] font-600 uppercase tracking-widest text-muted-foreground">
-                Email Body <span className="text-destructive">*</span>
-              </label>
-              <p className="text-[11px] text-muted-foreground">
-                Use <code className="bg-secondary px-1 rounded text-[10px]">{'{{NAME}}'}</code> to personalize with recipient name
-              </p>
+              {/* Validation hints */}
+              {(selectedTenants.length === 0 || !subject.trim() || !body.trim()) && (
+                <div className="mt-3 pt-3 border-t border-border space-y-1">
+                  {selectedTenants.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      Select at least one tenant from the left panel
+                    </p>
+                  )}
+                  {!subject.trim() && (
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      Enter an email subject
+                    </p>
+                  )}
+                  {!body.trim() && (
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      Write the email body
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={12}
-              placeholder="Write your email body here...&#10;&#10;Dear {{NAME}},&#10;&#10;Your message here..."
-              className="w-full px-3 py-2.5 text-[13px] border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white resize-none font-mono"
-            />
-          </div>
 
-          {/* Preview */}
-          {(subject || body) && (
-            <div>
-              <p className="text-[11px] font-600 uppercase tracking-widest text-muted-foreground mb-1.5">Preview</p>
-              <div className="bg-white border border-border rounded-xl p-4 text-[13px] text-foreground leading-relaxed">
-                <div className="border-b border-border pb-3 mb-3">
-                  <p className="text-[11px] text-muted-foreground">Subject: <span className="text-foreground font-500">{subject || '—'}</span></p>
-                </div>
-                <div className="whitespace-pre-wrap text-[13px] leading-relaxed">
-                  {body.replace(/{{NAME}}/g, '[Recipient Name]') || <span className="text-muted-foreground italic">No body content yet</span>}
-                </div>
+            {/* Error */}
+            {sendError && (
+              <div className="flex items-start gap-2.5 bg-destructive/8 border border-destructive/20 rounded-xl px-4 py-3">
+                <AlertCircle size={15} className="text-destructive shrink-0 mt-0.5" />
+                <p className="text-[13px] text-destructive">{sendError}</p>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Send summary + button */}
-          <div className="bg-white border border-border rounded-xl p-4 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[13px] font-600 text-foreground">
-                {selectedTenants.length === 0
-                  ? 'No recipients selected'
-                  : `${selectedTenants.length} recipient${selectedTenants.length !== 1 ? 's' : ''} selected`}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                {hierarchyLabel
-                  ? `Scope: ${hierarchyLabel}`
-                  : 'Use the hierarchy above to filter unit holders'}
-              </p>
-            </div>
-            <button
-              onClick={handleSend}
-              disabled={sending || selectedTenants.length === 0 || !subject.trim() || !body.trim()}
-              className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-[13px] font-600 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-            >
-              {sending ? (
-                <>
-                  <Loader2 size={15} className="animate-spin" />
-                  Sending…
-                </>
-              ) : (
-                <>
-                  <Send size={15} />
-                  Send Notification
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Error */}
-          {sendError && (
-            <div className="flex items-start gap-2.5 bg-destructive/8 border border-destructive/20 rounded-xl px-4 py-3">
-              <AlertCircle size={15} className="text-destructive shrink-0 mt-0.5" />
-              <p className="text-[13px] text-destructive">{sendError}</p>
-            </div>
-          )}
-
-          {/* Success */}
-          {sendResult && (
-            <div className={`flex items-start gap-2.5 rounded-xl px-4 py-3 border ${sendResult.success ? 'bg-success/8 border-success/20' : 'bg-warning/8 border-warning/20'}`}>
-              {sendResult.success ? (
-                <CheckCircle size={15} className="text-success shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle size={15} className="text-warning shrink-0 mt-0.5" />
-              )}
-              <div>
-                <p className="text-[13px] font-500 text-foreground">
-                  {sendResult.success
-                    ? `Notification sent successfully to ${sendResult.totalRecipients} recipient${sendResult.totalRecipients !== 1 ? 's' : ''}.`
-                    : `Sent with some issues. ${sendResult.totalRecipients} recipient${sendResult.totalRecipients !== 1 ? 's' : ''} processed.`}
-                </p>
-                {sendResult.errors && sendResult.errors.length > 0 && (
-                  <ul className="mt-1 space-y-0.5">
-                    {sendResult.errors.map((e, i) => (
-                      <li key={i} className="text-[11px] text-muted-foreground">• {e}</li>
-                    ))}
-                  </ul>
+            {/* Success */}
+            {sendResult && (
+              <div className={`flex items-start gap-2.5 rounded-xl px-4 py-3 border ${sendResult.success ? 'bg-success/8 border-success/20' : 'bg-warning/8 border-warning/20'}`}>
+                {sendResult.success ? (
+                  <CheckCircle size={15} className="text-success shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle size={15} className="text-warning shrink-0 mt-0.5" />
                 )}
+                <div>
+                  <p className="text-[13px] font-500 text-foreground">
+                    {sendResult.success
+                      ? `Email sent successfully to ${sendResult.totalRecipients} recipient${sendResult.totalRecipients !== 1 ? 's' : ''}.`
+                      : `Sent with some issues. ${sendResult.totalRecipients} recipient${sendResult.totalRecipients !== 1 ? 's' : ''} processed.`}
+                  </p>
+                  {sendResult.errors && sendResult.errors.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {sendResult.errors.map((e, i) => (
+                        <li key={i} className="text-[11px] text-muted-foreground">• {e}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
