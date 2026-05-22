@@ -341,7 +341,7 @@ export default function LandingPage() {
               <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(22px,2.8vw,46px)', lineHeight: 1.25, color: '#fff', marginBottom: 24, letterSpacing: -1 }}>
                 <span style={{ display: 'block', color: '#fff' }}>Leasing Management Software for</span>
                 <span style={{ display: 'block', color: '#fff' }}>Residential &amp; Retail</span>
-                <span style={{ display: 'block', color: '#F97316' }}>Commercial and Malls</span>
+                <span style={{ display: 'block', color: '#f4821f', textDecoration: 'underline' }}>Commercial &amp; Malls</span>
               </h1>
 
               <p style={{ fontSize: 17, color: '#7fb3d3', lineHeight: 1.75, maxWidth: 440, marginBottom: 40, fontWeight: 300 }}>
