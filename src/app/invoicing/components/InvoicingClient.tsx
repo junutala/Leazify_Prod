@@ -10,6 +10,7 @@ import Modal from '@/components/ui/Modal';
 import { logAuditEvent } from '@/lib/auditLog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatCurrencyFull } from '@/lib/currency';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -296,9 +297,9 @@ function InvoiceDetailModal({ invoice, open, onClose, onUpdated }: { invoice: In
           <div><span className="text-muted-foreground text-[12px]">{t.inv_col_tenant}</span><p className="font-500 mt-0.5">{invoice.tenants?.full_name || '—'}</p></div>
           <div><span className="text-muted-foreground text-[12px]">{t.inv_col_type}</span><p className="font-500 mt-0.5 capitalize">{(invoice.invoice_type_ext || '').replace(/_/g, ' ')}</p></div>
           <div><span className="text-muted-foreground text-[12px]">{t.inv_col_due_date}</span><p className="font-500 mt-0.5">{invoice.due_date || '—'}</p></div>
-          <div><span className="text-muted-foreground text-[12px]">{t.inv_detail_base_amount}</span><p className="font-500 mt-0.5">AED {Number(invoice.amount).toLocaleString()}</p></div>
-          <div><span className="text-muted-foreground text-[12px]">{t.inv_detail_vat} ({invoice.vat_pct || 0}%)</span><p className="font-500 mt-0.5">AED {Number(invoice.tax_amount).toLocaleString()}</p></div>
-          <div><span className="text-muted-foreground text-[12px]">{t.inv_detail_total}</span><p className="font-700 mt-0.5 text-primary">AED {Number(invoice.total_amount).toLocaleString()}</p></div>
+          <div><span className="text-muted-foreground text-[12px]">{t.inv_detail_base_amount}</span><p className="font-500 mt-0.5">{formatCurrencyFull(Number(invoice.amount), (invoice as any).currency || 'AED')}</p></div>
+          <div><span className="text-muted-foreground text-[12px]">{t.inv_detail_vat} ({invoice.vat_pct || 0}%)</span><p className="font-500 mt-0.5">{formatCurrencyFull(Number(invoice.tax_amount), (invoice as any).currency || 'AED')}</p></div>
+          <div><span className="text-muted-foreground text-[12px]">{t.inv_detail_total}</span><p className="font-700 mt-0.5 text-primary">{formatCurrencyFull(Number(invoice.total_amount), (invoice as any).currency || 'AED')}</p></div>
           <div><span className="text-muted-foreground text-[12px]">{t.inv_col_status}</span><div className="mt-1"><Badge variant={statusColors[invoice.status] as any || 'default'} size="sm">{invoice.status}</Badge></div></div>
         </div>
         {(invoice.invoice_period_start || invoice.invoice_period_end) && (
@@ -514,7 +515,7 @@ function LeaseInvoicePanel({ onGenerated }: { onGenerated: () => void }) {
                         <td className="px-3 py-2 font-500">{l.units?.unit_name || l.units?.unit_number || '—'}</td>
                         <td className="px-3 py-2 text-muted-foreground">{l.persons?.name || '—'}</td>
                         <td className="px-3 py-2 text-muted-foreground">{l.units?.floors?.buildings?.projects?.name || '—'}</td>
-                        <td className="px-3 py-2 tabular-nums">{amount ? `AED ${Number(amount).toLocaleString()}` : '—'}</td>
+                        <td className="px-3 py-2 tabular-nums">{amount ? formatCurrencyFull(Number(amount), (l.units?.floors?.buildings?.projects as any)?.currency || 'AED') : '—'}</td>
                         <td className="px-3 py-2">
                           {isGenerated
                             ? <Badge variant="success" size="sm"><CheckCircle size={9} className="inline mr-1" />{t.inv_generated_badge}</Badge>
@@ -1438,7 +1439,7 @@ function InvoiceListPanel({ refresh }: { refresh: number }) {
     }
 
     const { data, error } = await supabase.from('invoices')
-      .select('*, units(unit_name, unit_number, floors(buildings(project_id))), tenants(full_name)')
+      .select('*, units(unit_name, unit_number, floors(buildings(project_id, projects(id, currency)))), tenants(full_name)')
       .order('created_at', { ascending: false });
     if (error) setFetchError(error.message);
 
@@ -1487,8 +1488,8 @@ function InvoiceListPanel({ refresh }: { refresh: number }) {
       <div className="grid grid-cols-4 gap-3">
         {[
           { label: t.inv_list_total, value: invoices.length.toString(), color: 'text-foreground' },
-          { label: t.inv_list_outstanding, value: `AED ${totalOutstanding.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: 'text-amber-600' },
-          { label: t.inv_list_collected, value: `AED ${totalCollected.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: 'text-green-600' },
+          { label: t.inv_list_outstanding, value: `${totalOutstanding.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: 'text-amber-600' },
+          { label: t.inv_list_collected, value: `${totalCollected.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: 'text-green-600' },
           { label: t.inv_list_overdue, value: invoices.filter(i => i.status === 'overdue').length.toString(), color: 'text-destructive' },
         ].map(c => (
           <div key={c.label} className="bg-white rounded-xl border border-border shadow-card p-4">
@@ -1544,7 +1545,9 @@ function InvoiceListPanel({ refresh }: { refresh: number }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map(inv => (
+                {filtered.map(inv => {
+                  const invCurrency = (inv as any).units?.floors?.buildings?.projects?.currency || 'AED';
+                  return (
                   <tr key={inv.id} className="hover:bg-secondary/30 transition-colors">
                     <td className="px-4 py-3 font-mono text-[12px] text-primary font-600">{inv.invoice_number}</td>
                     <td className="px-4 py-3 font-500">{inv.units?.unit_name || inv.units?.unit_number || '—'}</td>
@@ -1552,16 +1555,17 @@ function InvoiceListPanel({ refresh }: { refresh: number }) {
                     <td className="px-4 py-3 text-[12px] text-muted-foreground whitespace-nowrap">
                       {inv.invoice_period_start ? `${inv.invoice_period_start} → ${inv.invoice_period_end}` : '—'}
                     </td>
-                    <td className="px-4 py-3 tabular-nums">AED {Number(inv.amount).toLocaleString()}</td>
+                    <td className="px-4 py-3 tabular-nums">{formatCurrencyFull(Number(inv.amount), invCurrency)}</td>
                     <td className="px-4 py-3 tabular-nums text-muted-foreground">{inv.vat_pct || 0}%</td>
-                    <td className="px-4 py-3 tabular-nums font-600">AED {Number(inv.total_amount).toLocaleString()}</td>
+                    <td className="px-4 py-3 tabular-nums font-600">{formatCurrencyFull(Number(inv.total_amount), invCurrency)}</td>
                     <td className="px-4 py-3"><Badge variant={statusColors[inv.status] as any || 'default'} size="sm">{inv.status}</Badge></td>
                     <td className="px-4 py-3 text-[12px] text-muted-foreground">{inv.due_date || '—'}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => setSelectedInvoice(inv)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Eye size={14} /></button>
+                      <button onClick={() => setSelectedInvoice({ ...inv, currency: invCurrency } as any)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"><Eye size={14} /></button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

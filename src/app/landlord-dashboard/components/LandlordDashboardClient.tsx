@@ -7,6 +7,7 @@ import { Building2, FileText, DollarSign, AlertTriangle, Clock, Wrench, Trending
 import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
+import { formatCurrency, formatCurrencyFull, CURRENCIES } from '@/lib/currency';
 
 interface LandlordMetrics {
   totalUnits: number;
@@ -24,6 +25,14 @@ interface LandlordMetrics {
   overdueAmount: number;
 }
 
+interface ProjectCurrencyInfo {
+  projectId: string;
+  projectName: string;
+  currency: string;
+  annualRent: number;
+  activeLeases: number;
+}
+
 interface RecentLease {
   id: string;
   lease_number: string | null;
@@ -31,7 +40,7 @@ interface RecentLease {
   start_date: string;
   end_date: string;
   rent_amount: number;
-  units?: { unit_name: string; unit_number: string; floors?: { name: string; buildings?: { name: string; projects?: { name: string } } } };
+  units?: { unit_name: string; unit_number: string; floors?: { name: string; buildings?: { name: string; projects?: { name: string; currency?: string } } } };
   persons?: { name: string };
 }
 
@@ -72,12 +81,8 @@ function MetricCard({
   return href ? <Link href={href}>{content}</Link> : content;
 }
 
-function fmt(n: number) {
-  return n >= 1_000_000
-    ? `AED ${(n / 1_000_000).toFixed(1)}M`
-    : n >= 1000
-    ? `AED ${(n / 1000).toFixed(0)}K`
-    : `AED ${n.toLocaleString()}`;
+function fmt(n: number, currency: string = 'AED') {
+  return formatCurrency(n, currency);
 }
 
 export default function LandlordDashboardClient() {
@@ -85,6 +90,7 @@ export default function LandlordDashboardClient() {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<LandlordMetrics | null>(null);
   const [recentLeases, setRecentLeases] = useState<RecentLease[]>([]);
+  const [projectCurrencies, setProjectCurrencies] = useState<ProjectCurrencyInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [landlordName, setLandlordName] = useState('');
 
@@ -103,7 +109,6 @@ export default function LandlordDashboardClient() {
       if (personData) {
         setLandlordName(personData.name);
       } else {
-        // Fallback to user profile name
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('full_name')
@@ -116,7 +121,6 @@ export default function LandlordDashboardClient() {
       const in30Days = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0];
       const in60Days = new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString().split('T')[0];
 
-      // Get landlord assignments to find their units/properties
       let unitIds: string[] = [];
       let projectIds: string[] = [];
 
@@ -127,7 +131,6 @@ export default function LandlordDashboardClient() {
           .eq('person_id', personData.id);
 
         if (assignments && assignments.length > 0) {
-          // Collect direct unit IDs
           const directUnitIds = assignments.filter((a: any) => a.unit_id).map((a: any) => a.unit_id);
           const directProjectIds = assignments.filter((a: any) => a.project_id).map((a: any) => a.project_id);
           const directBuildingIds = assignments.filter((a: any) => a.building_id).map((a: any) => a.building_id);
@@ -135,7 +138,6 @@ export default function LandlordDashboardClient() {
 
           projectIds = [...new Set(directProjectIds)];
 
-          // Resolve units from projects
           if (directProjectIds.length > 0) {
             const { data: bldgs } = await supabase.from('buildings').select('id').in('project_id', directProjectIds);
             const bldgIds = (bldgs || []).map((b: any) => b.id);
@@ -149,7 +151,6 @@ export default function LandlordDashboardClient() {
             }
           }
 
-          // Resolve units from buildings
           if (directBuildingIds.length > 0) {
             const { data: flrs } = await supabase.from('floors').select('id').in('building_id', directBuildingIds);
             const flrIds = (flrs || []).map((f: any) => f.id);
@@ -159,7 +160,6 @@ export default function LandlordDashboardClient() {
             }
           }
 
-          // Resolve units from floors
           if (directFloorIds.length > 0) {
             const { data: us } = await supabase.from('units').select('id').in('floor_id', directFloorIds);
             unitIds.push(...(us || []).map((u: any) => u.id));
@@ -170,7 +170,6 @@ export default function LandlordDashboardClient() {
         }
       }
 
-      // If no assignments found, show all data (for superadmin/admin landlords)
       const hasScope = unitIds.length > 0 || projectIds.length > 0;
 
       // Fetch units
@@ -178,8 +177,10 @@ export default function LandlordDashboardClient() {
       if (hasScope && unitIds.length > 0) unitsQuery = unitsQuery.in('id', unitIds);
       const { data: units } = await unitsQuery;
 
-      // Fetch leases
-      let leasesQuery = supabase.from('leases').select('id, status, start_date, end_date, rent_amount, security_deposit, unit_id, lease_number, lessee_person_id, units(unit_name, unit_number, floors(name, buildings(name, projects(name)))), persons(name)').order('created_at', { ascending: false });
+      // Fetch leases with project currency
+      let leasesQuery = supabase.from('leases')
+        .select('id, status, start_date, end_date, rent_amount, security_deposit, unit_id, lease_number, lessee_person_id, units(unit_name, unit_number, floors(name, buildings(name, projects(name, currency)))), persons(name)')
+        .order('created_at', { ascending: false });
       if (hasScope && unitIds.length > 0) leasesQuery = leasesQuery.in('unit_id', unitIds);
       const { data: leases } = await leasesQuery;
 
@@ -193,13 +194,17 @@ export default function LandlordDashboardClient() {
       if (hasScope && projectIds.length > 0) maintQuery = maintQuery.in('project_id', projectIds);
       const { data: maintenance } = await maintQuery;
 
+      // Fetch projects with currency info
+      let projectsQuery = supabase.from('projects').select('id, name, currency');
+      if (hasScope && projectIds.length > 0) projectsQuery = projectsQuery.in('id', projectIds);
+      const { data: projectsData } = await projectsQuery;
+
       const unitList = units || [];
       const leaseList = (leases || []) as RecentLease[];
       const invoiceList = invoices || [];
       const maintList = maintenance || [];
 
       const totalUnits = unitList.length;
-      // Derive occupied units from active leases (not units.status which may be stale)
       const activeLeaseUnitIds = new Set(
         leaseList.filter(l => l.status === 'active').map((l: any) => l.unit_id).filter(Boolean)
       );
@@ -219,6 +224,24 @@ export default function LandlordDashboardClient() {
       const overdueAmount = overdueInvoices.reduce((s: number, i: any) => s + Number(i.total_amount || 0), 0);
 
       const openMaint = maintList.filter((m: any) => !['resolved', 'closed', 'completed'].includes(m.status)).length;
+
+      // Build per-project currency breakdown
+      const projectCurrencyMap: Record<string, ProjectCurrencyInfo> = {};
+      (projectsData || []).forEach((p: any) => {
+        projectCurrencyMap[p.id] = { projectId: p.id, projectName: p.name, currency: p.currency || 'AED', annualRent: 0, activeLeases: 0 };
+      });
+      activeLeases.forEach((lease: any) => {
+        const projectId = lease.units?.floors?.buildings?.projects?.id;
+        const projectCurrency = lease.units?.floors?.buildings?.projects?.currency || 'AED';
+        if (projectId) {
+          if (!projectCurrencyMap[projectId]) {
+            projectCurrencyMap[projectId] = { projectId, projectName: lease.units?.floors?.buildings?.projects?.name || projectId, currency: projectCurrency, annualRent: 0, activeLeases: 0 };
+          }
+          projectCurrencyMap[projectId].annualRent += Number(lease.rent_amount || 0);
+          projectCurrencyMap[projectId].activeLeases += 1;
+        }
+      });
+      setProjectCurrencies(Object.values(projectCurrencyMap).filter(p => p.activeLeases > 0));
 
       setMetrics({
         totalUnits,
@@ -248,6 +271,7 @@ export default function LandlordDashboardClient() {
     fetchData();
   }, [fetchData]);
 
+
   if (loading) {
     return (
       <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-6 space-y-6">
@@ -270,6 +294,15 @@ export default function LandlordDashboardClient() {
 
   const m = metrics;
 
+  // Determine primary currency (most common across projects, or AED if mixed)
+  const primaryCurrency = projectCurrencies.length === 1
+    ? projectCurrencies[0].currency
+    : projectCurrencies.length > 1
+      ? (projectCurrencies.sort((a, b) => b.annualRent - a.annualRent)[0]?.currency ?? 'AED')
+      : 'AED';
+
+  const hasMultipleCurrencies = new Set(projectCurrencies.map(p => p.currency)).size > 1;
+
   return (
     <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       {/* Header */}
@@ -287,6 +320,19 @@ export default function LandlordDashboardClient() {
           <RefreshCw size={13} /> <span className="hidden sm:inline">Refresh</span>
         </button>
       </div>
+
+      {/* Multi-currency notice */}
+      {hasMultipleCurrencies && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[13px] font-600 text-amber-800">Multi-currency portfolio</p>
+            <p className="text-[12px] text-amber-700 mt-0.5">
+              Your projects use different currencies. Totals below are shown in {primaryCurrency} (dominant project). See per-project breakdown below.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Hero occupancy card + key metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
@@ -324,8 +370,8 @@ export default function LandlordDashboardClient() {
         <MetricCard
           icon={<DollarSign size={18} className="text-emerald-600" />}
           label="Annual Rent Income"
-          value={fmt(m?.annualRentIncome || 0)}
-          sub={`Monthly: ${fmt(m?.monthlyRentIncome || 0)}`}
+          value={fmt(m?.annualRentIncome || 0, primaryCurrency)}
+          sub={`Monthly: ${fmt(m?.monthlyRentIncome || 0, primaryCurrency)}`}
           accent="bg-emerald-50"
           href="/leasing"
         />
@@ -354,7 +400,7 @@ export default function LandlordDashboardClient() {
         <MetricCard
           icon={<TrendingUp size={18} className="text-indigo-600" />}
           label="Security Deposits Held"
-          value={fmt(m?.totalSecurityDeposit || 0)}
+          value={fmt(m?.totalSecurityDeposit || 0, primaryCurrency)}
           sub="From active leases"
           accent="bg-indigo-50"
         />
@@ -364,7 +410,7 @@ export default function LandlordDashboardClient() {
           icon={<AlertTriangle size={18} className={m?.overdueInvoices ? 'text-destructive' : 'text-muted-foreground'} />}
           label="Overdue Invoices"
           value={m?.overdueInvoices || 0}
-          sub={m?.overdueAmount ? `${fmt(m.overdueAmount)} outstanding` : 'All clear'}
+          sub={m?.overdueAmount ? `${fmt(m.overdueAmount, primaryCurrency)} outstanding` : 'All clear'}
           accent={m?.overdueInvoices ? 'bg-destructive/10' : 'bg-secondary'}
           href="/invoicing"
         />
@@ -379,6 +425,44 @@ export default function LandlordDashboardClient() {
           href="/maintenance"
         />
       </div>
+
+      {/* Per-Project Currency Breakdown */}
+      {projectCurrencies.length > 0 && (
+        <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+            <DollarSign size={16} className="text-primary" />
+            <h2 className="text-[14px] font-600 text-foreground">Income by Project</h2>
+            <span className="ml-auto text-[11px] text-muted-foreground">Per-project currency</span>
+          </div>
+          <div className="divide-y divide-border">
+            {projectCurrencies.map(p => {
+              const currConfig = CURRENCIES[p.currency] ?? CURRENCIES['AED'];
+              return (
+                <div key={p.projectId} className="flex items-center justify-between px-5 py-3.5 hover:bg-secondary/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Building2 size={14} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-600 text-foreground">{p.projectName}</p>
+                      <p className="text-[11px] text-muted-foreground">{p.activeLeases} active lease{p.activeLeases !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[14px] font-700 text-foreground tabular-nums">
+                      {formatCurrencyFull(p.annualRent, p.currency)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-secondary rounded text-[10px] font-600">{p.currency}</span>
+                      {' '}{currConfig.name}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Recent Leases Table */}
       <div className="bg-white rounded-2xl border border-border shadow-card overflow-hidden">
@@ -409,24 +493,29 @@ export default function LandlordDashboardClient() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {recentLeases.map(lease => (
-                  <tr key={lease.id} className="hover:bg-secondary/30 transition-colors">
-                    <td className="px-4 py-3 font-mono text-[12px] text-primary font-600">{lease.lease_number || '—'}</td>
-                    <td className="px-4 py-3 font-500">{lease.units?.unit_name || lease.units?.unit_number || '—'}</td>
-                    <td className="px-4 py-3 text-muted-foreground text-[12px]">
-                      <div>{lease.units?.floors?.buildings?.name || '—'}</div>
-                      <div className="text-[11px]">{lease.units?.floors?.name || ''}</div>
-                    </td>
-                    <td className="px-4 py-3">{lease.persons?.name || '—'}</td>
-                    <td className="px-4 py-3 font-600 tabular-nums">AED {Number(lease.rent_amount).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-[12px] text-muted-foreground whitespace-nowrap">{lease.start_date} → {lease.end_date}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant={statusColors[lease.status] as any || 'default'} size="sm">
-                        {lease.status.charAt(0).toUpperCase() + lease.status.slice(1)}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
+                {recentLeases.map(lease => {
+                  const leaseCurrency = (lease.units as any)?.floors?.buildings?.projects?.currency || 'AED';
+                  return (
+                    <tr key={lease.id} className="hover:bg-secondary/30 transition-colors">
+                      <td className="px-4 py-3 font-mono text-[12px] text-primary font-600">{lease.lease_number || '—'}</td>
+                      <td className="px-4 py-3 font-500">{lease.units?.unit_name || lease.units?.unit_number || '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-[12px]">
+                        <div>{lease.units?.floors?.buildings?.name || '—'}</div>
+                        <div className="text-[11px]">{lease.units?.floors?.name || ''}</div>
+                      </td>
+                      <td className="px-4 py-3">{lease.persons?.name || '—'}</td>
+                      <td className="px-4 py-3 font-600 tabular-nums">
+                        {formatCurrencyFull(Number(lease.rent_amount), leaseCurrency)}
+                      </td>
+                      <td className="px-4 py-3 text-[12px] text-muted-foreground whitespace-nowrap">{lease.start_date} → {lease.end_date}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant={statusColors[lease.status] as any || 'default'} size="sm">
+                          {lease.status.charAt(0).toUpperCase() + lease.status.slice(1)}
+                        </Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
