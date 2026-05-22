@@ -342,8 +342,8 @@ export default function LandingPage() {
                 <span className="lp-badge-dot" style={{ fontSize: 8 }}>●</span> One Smart Platform
               </div>
 
-              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px,3.5vw,52px)', lineHeight: 1.15, color: '#fff', marginBottom: 24, letterSpacing: -1 }}>
-                Leasing Management Software
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(20px,2.6vw,42px)', lineHeight: 1.2, color: '#fff', marginBottom: 24, letterSpacing: -1, whiteSpace: 'nowrap' }}>
+                Leasing Management Software for <span style={{ color: '#fff' }}>Residential &amp; Retail</span> <span style={{ color: '#FFD700' }}>Commercial and Malls</span>
               </h1>
 
               <p style={{ fontSize: 17, color: '#7fb3d3', lineHeight: 1.75, maxWidth: 440, marginBottom: 40, fontWeight: 300 }}>
