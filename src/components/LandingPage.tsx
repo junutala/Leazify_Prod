@@ -343,13 +343,11 @@ export default function LandingPage() {
               </div>
 
               <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px,3.5vw,52px)', lineHeight: 1.15, color: '#fff', marginBottom: 24, letterSpacing: -1 }}>
-                Rental Application for<br />
-                <span style={{ color: '#ffffff', fontStyle: 'normal' }}>Residential &amp; Retail</span><br />
-                <em className="lp-hero-em" style={{ color: '#F5A623', fontStyle: 'normal' }}>Commercial and Malls</em>
+                Leasing Management Software
               </h1>
 
               <p style={{ fontSize: 17, color: '#7fb3d3', lineHeight: 1.75, maxWidth: 440, marginBottom: 40, fontWeight: 300 }}>
-                Leazify brings every leasing milestone — from tenant onboarding and rent escalation to invoices and maintenance — into a single, transparent platform built for landlords.
+                Every lease type. Every ownership structure. Every invoice — automated. Built for landlords who owns and manages mixed use properties
               </p>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
