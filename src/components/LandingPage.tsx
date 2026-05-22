@@ -338,16 +338,15 @@ export default function LandingPage() {
           <div className="lp-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center', maxWidth: 1280, margin: '0 auto', width: '100%', position: 'relative', zIndex: 1 }}>
             {/* Left */}
             <div className="lp-hero-content">
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(41,171,226,0.12)', border: '1px solid rgba(41,171,226,0.35)', color: '#29ABE2', fontSize: 11, fontWeight: 600, letterSpacing: '2.5px', textTransform: 'uppercase', padding: '7px 16px', borderRadius: 40, marginBottom: 28 }}>
-                <span className="lp-badge-dot" style={{ fontSize: 8 }}>●</span> One Smart Platform
-              </div>
-
-              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(20px,2.6vw,42px)', lineHeight: 1.2, color: '#fff', marginBottom: 24, letterSpacing: -1, whiteSpace: 'nowrap' }}>
-                Leasing Management Software for <span style={{ color: '#fff' }}>Residential &amp; Retail</span> <span style={{ color: '#FFD700' }}>Commercial and Malls</span>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(22px,2.8vw,46px)', lineHeight: 1.25, color: '#fff', marginBottom: 24, letterSpacing: -1 }}>
+                <span style={{ display: 'block', color: '#fff' }}>Leasing Management Software for</span>
+                <span style={{ display: 'block', color: '#fff' }}>Residential &amp; Retail</span>
+                <span style={{ display: 'block', color: '#FFD700' }}>Commercial and Malls</span>
               </h1>
 
               <p style={{ fontSize: 17, color: '#7fb3d3', lineHeight: 1.75, maxWidth: 440, marginBottom: 40, fontWeight: 300 }}>
-                Every lease type. Every ownership structure. Every invoice — automated. Built for landlords who owns and manages mixed use properties
+                Every lease type. Every ownership structure. Every invoice — automated.<br />
+                Built for landlords who owns and manages mixed use properties
               </p>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
@@ -363,11 +362,11 @@ export default function LandingPage() {
             <div className="lp-hero-visual" style={{ position: 'relative' }}>
               <div style={{ position: 'relative' }}>
                 <img
-                  src="/assets/images/dashboard_screenshot-1779421613971.jpg"
-                  alt="Leazify Rental Application Dashboard showing rental management overview"
+                  src="/assets/images/dashboard_screenshot-1779424600836.jpg"
+                  alt="Leazify Leasing Management Dashboard showing leasing overview"
                   className="lp-screenshot"
                 />
-                <div className="lp-float-card">
+                <div className="lp-float-card" style={{ position: 'absolute', right: -28, top: -28, bottom: 'auto', background: 'var(--lp-orange)', borderRadius: 12, padding: '14px 20px', boxShadow: '0 16px 40px rgba(244,130,31,0.4)', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 22 }}>📈</span>
                   <div style={{ color: '#fff' }}>
                     <strong style={{ display: 'block', fontSize: 14, fontWeight: 600 }}>Rent Escalation Applied</strong>
