@@ -551,10 +551,10 @@ export default function CommunicationsClient() {
     setLoadingHierarchy(true);
     const { data } = await supabase
       .from('buildings')
-      .select('id, building_name')
+      .select('id, name')
       .eq('project_id', id)
-      .order('building_name');
-    if (data) setBuildings(data.map((b: any) => ({ id: b.id, name: b.building_name })));
+      .order('name');
+    if (data) setBuildings(data.map((b: any) => ({ id: b.id, name: b.name })));
     setLoadingHierarchy(false);
   }, [supabase]);
 
@@ -569,10 +569,10 @@ export default function CommunicationsClient() {
     setLoadingHierarchy(true);
     const { data } = await supabase
       .from('floors')
-      .select('id, floor_name')
+      .select('id, name')
       .eq('building_id', id)
-      .order('floor_name');
-    if (data) setFloors(data.map((f: any) => ({ id: f.id, name: f.floor_name })));
+      .order('name');
+    if (data) setFloors(data.map((f: any) => ({ id: f.id, name: f.name })));
     setLoadingHierarchy(false);
   }, [supabase]);
 
