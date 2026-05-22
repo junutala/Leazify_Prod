@@ -11,7 +11,7 @@ interface LeazifyLogoProps {
 export default function LeazifyLogo({ className = '', height = 48 }: LeazifyLogoProps) {
   return (
     <Image
-      src="/assets/images/color-1779168809332.png"
+      src="/assets/images/Color_trimmed-1779419889345.jpg"
       alt="Leazify logo"
       height={height}
       width={height * 3}

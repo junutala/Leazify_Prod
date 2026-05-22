@@ -8,50 +8,50 @@ import { Analytics } from '@vercel/analytics/next';
 
 export const viewport: Viewport = {
   width: 'device-width',
-  initialScale: 1,
+  initialScale: 1
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new'),
-  title: 'PropFlow — Commercial Real Estate Management',
-  description: 'PropFlow helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
+  metadataBase: new URL('https://leazify.me'),
+  title: 'Leazify - Rental Applications for Retail, Commercial & Malls',
+  description: 'Leazify helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
   alternates: {
-    canonical: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
+    canonical: 'https://leazify.me',
     languages: {
-      'en': process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
-      'ar': process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
-    },
+      'en': 'https://leazify.me',
+      'ar': 'https://leazify.me'
+    }
   },
   openGraph: {
-    title: 'PropFlow — Real Estate Management',
+    title: 'Leazify - Rental Applications for Retail, Commercial & Malls',
     description: 'Manage leases, financials, and maintenance from one dashboard.',
-    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
-    siteName: 'PropFlow',
+    url: 'https://leazify.me',
+    siteName: 'Leazify',
     locale: 'en_US',
     alternateLocale: ['ar_AE'],
     type: 'website',
     images: [
-      {
-        url: '/assets/images/app_logo.png',
-        width: 1200,
-        height: 630,
-        alt: 'PropFlow - Commercial real estate management platform for property managers and landlords',
-        type: 'image/png',
-      },
-    ],
+    {
+      url: '/assets/images/app_logo.png',
+      width: 1200,
+      height: 630,
+      alt: 'Leazify - Rental application platform for retail, commercial buildings and malls',
+      type: 'image/png'
+    }]
+
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PropFlow — Real Estate Management',
+    title: 'Leazify - Rental Applications for Retail, Commercial & Malls',
     description: 'Manage leases, financials, and maintenance from one dashboard.',
-    images: ['/assets/images/app_logo.png'],
+    images: ['/assets/images/app_logo.png']
   },
   icons: {
     icon: [
-      { url: '/assets/images/color-1779168809332.png', type: 'image/png' },
-      { url: '/favicon.ico', type: 'image/x-icon' },
-    ],
-    apple: [{ url: '/assets/images/color-1779168809332.png', type: 'image/png' }],
+    { url: '/assets/images/Color_trimmed-1779419889345.jpg', type: 'image/jpeg' },
+    { url: '/favicon.ico', type: 'image/x-icon' }],
+
+    apple: [{ url: '/assets/images/Color_trimmed-1779419889345.jpg', type: 'image/jpeg' }]
   },
   robots: {
     index: true,
@@ -61,14 +61,14 @@ export const metadata: Metadata = {
       follow: true,
       'max-video-preview': -1,
       'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
+      'max-snippet': -1
+    }
+  }
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+  children
+}: Readonly<{children: React.ReactNode;}>) {
   return (
     <html lang="en">
       <head>
@@ -78,53 +78,52 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Organization',
-              name: 'PropFlow',
-              url: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
-              logo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new'}/assets/images/app_logo.png`,
-              description: 'Commercial real estate management platform for property managers, landlords, and service providers.',
-              sameAs: [],
-            }),
-          }}
-        />
+              name: 'Leazify',
+              url: 'https://leazify.me',
+              logo: "https://img.rocket.new/generatedImages/rocket_gen_img_1a91ca987-1779420022606.png",
+              description: 'Rental application platform for retail, commercial buildings, malls, and residential properties.',
+              sameAs: []
+            })
+          }} />
+        
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'WebPage',
-              name: 'PropFlow — Commercial Real Estate Management',
-              description: 'PropFlow helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
-              url: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
+              name: 'Leazify - Rental Applications for Retail, Commercial & Malls',
+              description: 'Leazify helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
+              url: 'https://leazify.me',
               publisher: {
                 '@type': 'Organization',
-                name: 'PropFlow',
+                name: 'Leazify',
                 logo: {
                   '@type': 'ImageObject',
-                  url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new'}/assets/images/app_logo.png`,
-                },
-              },
-            }),
-          }}
-        />
+                  url: 'https://leazify.me/assets/images/app_logo.png'
+                }
+              }
+            })
+          }} />
+        
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'SoftwareApplication',
-              name: 'PropFlow',
-              description: 'Commercial real estate management platform for tracking leases, financials, and maintenance.',
-              url: process.env.NEXT_PUBLIC_SITE_URL || 'https://propflow2839.builtwithrocket.new',
+              name: 'Leazify',
+              description: 'Rental application platform for retail, commercial buildings, malls, and residential properties.',
+              url: 'https://leazify.me',
               applicationCategory: 'BusinessApplication',
               operatingSystem: 'Web',
               offers: {
                 '@type': 'Offer',
                 price: '0',
-                priceCurrency: 'AED',
-              },
-            }),
-          }}
-        />
+                priceCurrency: 'AED'
+              }
+            })
+          }} />
 
         <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fpropflow2839back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.18" />
         <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
@@ -137,6 +136,6 @@ export default function RootLayout({
         <Toaster position="bottom-right" richColors closeButton />
         <Analytics />
       </body>
-    </html>
-  );
+    </html>);
+
 }

@@ -343,9 +343,8 @@ export default function LandingPage() {
               </div>
 
               <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(44px,5.5vw,76px)', lineHeight: 1.08, color: '#fff', marginBottom: 24, letterSpacing: -2 }}>
-                Your Properties.<br />
-                Your Rules.<br />
-                <em className="lp-hero-em" style={{ color: '#F5A623', fontStyle: 'normal' }}>Zero Complexity.</em>
+                Rental Application for Residential, Retail,<br />
+                <em className="lp-hero-em" style={{ color: '#F5A623', fontStyle: 'normal' }}>Commercial Buildings and Malls</em>
               </h1>
 
               <p style={{ fontSize: 17, color: '#7fb3d3', lineHeight: 1.75, maxWidth: 440, marginBottom: 40, fontWeight: 300 }}>
