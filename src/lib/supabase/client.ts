@@ -39,18 +39,16 @@ const setCookie = (name: string, value: string, options?: any) => {
   if (options?.expires) s += `; Expires=${new Date(options.expires).toUTCString()}`;
   document.cookie = s;
 };
+
 const deleteCookie = (name: string) => {
   if (typeof document === 'undefined') return;
-
   const host = typeof window !== 'undefined' ? window.location.hostname : '';
   const domains = ['', host, host ? `.${host}` : ''].filter(Boolean);
-
   const variants = [
     'Path=/; SameSite=Lax',
     'Path=/; SameSite=None; Secure',
     'Path=/; SameSite=None; Secure; Partitioned',
   ];
-
   variants.forEach((attrs) => {
     document.cookie = `${name}=; Max-Age=0; ${attrs}`;
     domains.forEach((domain) => {
@@ -78,8 +76,13 @@ if (typeof window !== 'undefined' && !(window as any).__sb_patched__) {
   };
 }
 
+// ─── Singleton client ──────────────────────────────────────────────────────────
+// One browser client for the entire app lifetime — never recreated.
+let _client: ReturnType<typeof createBrowserClient> | null = null;
+
 export function createClient() {
-  return createBrowserClient(
+  if (_client) return _client;
+  _client = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -105,4 +108,5 @@ export function createClient() {
       },
     }
   );
+  return _client;
 }
