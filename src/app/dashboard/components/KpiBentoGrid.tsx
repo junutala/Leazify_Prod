@@ -24,6 +24,7 @@ interface KpiData {
   sdPendingCount: number;
   totalRevenue: string;
   collectionRate: string;
+  draftInvoicesCount: number;
 }
 
 function SkeletonCard({ className }: { className?: string }) {
@@ -70,6 +71,7 @@ export default function KpiBentoGrid() {
             openServiceRequests: 0,
             securityDepositOutstanding: 'AED 0', sdPendingCount: 0,
             totalRevenue: 'AED 0', collectionRate: '0%',
+            draftInvoicesCount: 0,
           });
           setLoading(false);
           return;
@@ -109,6 +111,7 @@ export default function KpiBentoGrid() {
             openServiceRequests: 0,
             securityDepositOutstanding: 'AED 0', sdPendingCount: 0,
             totalRevenue: 'AED 0', collectionRate: '0%',
+            draftInvoicesCount: 0,
           });
           setLoading(false);
           return;
@@ -151,7 +154,7 @@ export default function KpiBentoGrid() {
         (l) => l.status === 'active' && l.end_date >= today && l.end_date <= in30Days
       ).length;
 
-      const rentInvoices = invoices.filter((i) => i.invoice_type === 'rent');
+      const rentInvoices = invoices.filter((i) => i.invoice_type === 'rent' && i.status !== 'draft');
       const overdueRent = rentInvoices.filter((i) => {
         if (i.status === 'overdue') return true;
         if (['paid', 'cancelled'].includes(i.status)) return false;
@@ -159,7 +162,7 @@ export default function KpiBentoGrid() {
       });
       const rentOutstandingAmt = overdueRent.reduce((s, i) => s + Number(i.total_amount || 0), 0);
 
-      const amcInvoices = invoices.filter((i) => i.invoice_type === 'amc' || i.invoice_type === 'other');
+      const amcInvoices = invoices.filter((i) => (i.invoice_type === 'amc' || i.invoice_type === 'other') && i.status !== 'draft');
       const overdueAmc = amcInvoices.filter((i) => {
         if (i.status === 'overdue') return true;
         if (['paid', 'cancelled'].includes(i.status)) return false;
@@ -172,6 +175,8 @@ export default function KpiBentoGrid() {
       const totalInvoiced = invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled')
         .reduce((s, i) => s + Number(i.total_amount || 0), 0);
       const collectionRate = totalInvoiced > 0 ? ((totalRevenue / totalInvoiced) * 100).toFixed(0) : '0';
+
+      const draftInvoicesCount = invoices.filter((i) => i.status === 'draft').length;
 
       const openWorkOrders = workOrders.filter((w) => !['completed', 'cancelled'].includes(w.status));
       const unassignedWO = openWorkOrders.filter((w) => !w.provider_id);
@@ -200,6 +205,7 @@ export default function KpiBentoGrid() {
         sdPendingCount,
         totalRevenue: fmt(totalRevenue),
         collectionRate: `${collectionRate}%`,
+        draftInvoicesCount,
       });
     } catch (e) {
       console.error('KPI fetch error', e);
@@ -367,6 +373,23 @@ export default function KpiBentoGrid() {
         <p className="text-[11px] font-600 uppercase tracking-wider text-muted-foreground mb-1">{t?.kpi_security_deposits}</p>
         <p className="text-[22px] font-800 text-foreground tabular-nums leading-tight">{data.securityDepositOutstanding}</p>
         <p className="text-[11px] text-muted-foreground mt-1">{data.sdPendingCount} {t?.kpi_active_leases_count}</p>
+      </div>
+
+      {/* Draft Invoices */}
+      <div className="rounded-2xl border border-border bg-white p-5 shadow-card hover:shadow-card-hover transition-all duration-200">
+        <div className="flex items-start justify-between mb-3">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+            <FileText size={18} className="text-slate-500" />
+          </div>
+          {data.draftInvoicesCount > 0 && (
+            <Link href="/invoicing" className="text-[10px] font-600 text-slate-500 hover:underline flex items-center gap-0.5">
+              View <ArrowRight size={9} />
+            </Link>
+          )}
+        </div>
+        <p className="text-[11px] font-600 uppercase tracking-wider text-muted-foreground mb-1">Draft Invoices</p>
+        <p className="text-[22px] font-800 text-foreground tabular-nums leading-tight">{data.draftInvoicesCount}</p>
+        <p className="text-[11px] text-muted-foreground mt-1">{data.draftInvoicesCount === 0 ? 'No pending drafts' : 'Awaiting issuance'}</p>
       </div>
 
       {/* Expiring Leases */}

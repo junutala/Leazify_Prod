@@ -575,7 +575,7 @@ function ReceiptsListView() {
         units(unit_name, unit_number, floors(name, buildings(name, projects(name, id)))),
         leases(persons(name))
       `)
-      .in('status', ['sent', 'overdue', 'partially_paid', 'draft'])
+      .in('status', ['sent', 'overdue', 'partially_paid'])
       .order('due_date', { ascending: true });
 
     if (unitIds.length > 0) {
