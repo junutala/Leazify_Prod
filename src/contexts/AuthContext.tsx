@@ -44,10 +44,12 @@ export const useAuth = () => {
   return context;
 };
 
+// Module-level singleton — never recreated across renders
+const supabase = createClient();
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const supabase = createClient();
 
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);

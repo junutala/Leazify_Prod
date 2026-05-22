@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useCallback, useRef, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,9 +51,7 @@ export function useAutoRefresh(key: string, fetchFn: () => void) {
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function DataRefreshProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const listenersRef = useRef<Map<string, Set<RefreshListener>>>(new Map());
-  const prevPathRef = useRef<string>(pathname);
 
   const subscribe = useCallback((key: string, listener: RefreshListener) => {
     if (!listenersRef.current.has(key)) {
@@ -79,17 +76,8 @@ export function DataRefreshProvider({ children }: { children: React.ReactNode })
     listenersRef.current.forEach((listeners) => listeners.forEach((fn) => fn()));
   }, []);
 
-  // Trigger refresh on route change
-  useEffect(() => {
-    if (prevPathRef.current !== pathname) {
-      prevPathRef.current = pathname;
-      // Small delay to let the new page mount first
-      const timer = setTimeout(() => {
-        refreshAll();
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [pathname, refreshAll]);
+  // Note: route-change refresh removed — each page fetches on mount via usePageData.
+  // Manual refresh is available via refresh(key) or refreshAll().
 
   return (
     <DataRefreshContext.Provider value={{ subscribe, refresh, refreshAll }}>
