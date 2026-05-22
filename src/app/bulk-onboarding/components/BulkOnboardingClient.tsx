@@ -170,7 +170,7 @@ export default function BulkOnboardingClient() {
             address: row.address || null,
             city: row.city || null,
             country: row.country || 'United Arab Emirates',
-            usage_type: row.usage_type || 'office',
+            usage_type: (row.usage_type || 'office').toLowerCase(),
             number_of_buildings: parseInt(row.number_of_buildings) || 1,
             vat_number: row.vat_number || null,
           });
@@ -183,7 +183,7 @@ export default function BulkOnboardingClient() {
             name: row.name,
             address: row.address || null,
             number_of_floors: parseInt(row.number_of_floors) || 1,
-            usage_type: row.usage_type || 'office',
+            usage_type: (row.usage_type || 'office').toLowerCase(),
           });
           if (error) throw error;
         } else if (type === 'floors') {
@@ -207,7 +207,7 @@ export default function BulkOnboardingClient() {
             name: row.name,
             description: row.description || null,
             number_of_units: parseInt(row.number_of_units) || 0,
-            usage_type: row.usage_type || 'office',
+            usage_type: (row.usage_type || 'office').toLowerCase(),
           });
           if (error) throw error;
         } else if (type === 'units') {
@@ -247,7 +247,7 @@ export default function BulkOnboardingClient() {
             unit_name: row.unit_name,
             unit_number: row.unit_number || row.unit_name,
             gla_sqft: parseFloat(row.gla_sqft) || null,
-            usage_type: row.usage_type || 'office',
+            usage_type: (row.usage_type || 'office').toLowerCase(),
             lockable: row.lockable?.toLowerCase() === 'true',
             status: 'vacant',
           });
