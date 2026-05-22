@@ -27,6 +27,8 @@ interface Tenant {
   floor_id: string;
   unit_id: string;
   lease_status: string;
+  lease_end_date: string;
+  has_outstanding_invoices?: boolean;
   selected: boolean;
 }
 
@@ -301,6 +303,9 @@ export default function CommunicationsClient() {
   const [selectedFloor, setSelectedFloor] = useState('');
   const [selectedUnit, setSelectedUnit] = useState('');
 
+  // Tenant filter
+  const [tenantFilter, setTenantFilter] = useState<'all' | 'outstanding_invoices' | 'renewal_90'>('all');
+
   // Compose
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -428,10 +433,10 @@ export default function CommunicationsClient() {
         return;
       }
 
-      // Step 2: Fetch active leases
+      // Step 2: Fetch active leases — include end_date for renewal filter
       let leaseQuery = supabase
         .from('leases')
-        .select('id, unit_id, lessee_person_id, status')
+        .select('id, unit_id, lessee_person_id, status, end_date')
         .eq('status', 'active')
         .not('lessee_person_id', 'is', null);
 
@@ -504,12 +509,8 @@ export default function CommunicationsClient() {
       }
 
       const personMap = new Map((persons || []).map((p: any) => [p.id, p]));
-      const personsWithoutEmail = (persons || []).filter((p: any) => !p.email);
-      if (personsWithoutEmail.length > 0) {
-        console.warn('[Step 3] Persons missing email (will be skipped):', personsWithoutEmail);
-      }
 
-      // Step 4: Fetch unit details with floor/building/project chain
+      // Step 4: Fetch unit details
       const leaseUnitIds = [...new Set(leases.map((l: any) => l.unit_id).filter(Boolean))];
       console.log('[Step 4] Fetching unit details for IDs:', leaseUnitIds);
       const { data: unitDetails, error: unitDetailsErr } = await supabase
@@ -550,21 +551,33 @@ export default function CommunicationsClient() {
 
       const projectMap = new Map((projectDetails || []).map((p: any) => [p.id, p]));
 
-      // Step 8: Assemble tenant list
-      const seen = new Set<string>();
+      // Step 7b: Fetch outstanding invoices for all lease IDs
+      const allLeaseIds = leases.map((l: any) => l.id);
+      const { data: outstandingInvoices } = allLeaseIds.length > 0
+        ? await supabase
+            .from('invoices')
+            .select('lease_id')
+            .in('lease_id', allLeaseIds)
+            .in('status', ['sent', 'overdue', 'partially_paid'])
+        : { data: [] };
+      const leasesWithOutstanding = new Set((outstandingInvoices || []).map((inv: any) => inv.lease_id));
+      console.log('[Step 7b] Leases with outstanding invoices:', leasesWithOutstanding.size);
+
+      // Step 8: Assemble tenant list — deduplicate by person.id (not email)
+      // Each unique person gets one entry per lease (one row per active lease)
+      const seen = new Set<string>(); // deduplicate by lease_id to avoid duplicates
       const mapped: Tenant[] = [];
       let skippedNoPerson = 0;
       let skippedNoEmail = 0;
-      let skippedDuplicate = 0;
 
       for (const lease of leases as any[]) {
         const person = personMap.get(lease.lessee_person_id);
         if (!person) { skippedNoPerson++; continue; }
         if (!person.email) { skippedNoEmail++; continue; }
 
-        // Deduplicate by email
-        if (seen.has(person.email)) { skippedDuplicate++; continue; }
-        seen.add(person.email);
+        // Deduplicate by lease_id (not by email — multiple tenants can share an email in corporate scenarios)
+        if (seen.has(lease.id)) continue;
+        seen.add(lease.id);
 
         const unit = unitMap.get(lease.unit_id);
         const floor = unit ? floorMap.get(unit.floor_id) : null;
@@ -585,6 +598,8 @@ export default function CommunicationsClient() {
           floor_id: floor?.id || '',
           unit_id: unit?.id || '',
           lease_status: lease.status,
+          lease_end_date: lease.end_date || '',
+          has_outstanding_invoices: leasesWithOutstanding.has(lease.id),
           selected: false,
         });
       }
@@ -594,7 +609,6 @@ export default function CommunicationsClient() {
         mappedTenants: mapped.length,
         skippedNoPerson,
         skippedNoEmail,
-        skippedDuplicate,
         tenants: mapped,
       });
       console.groupEnd();
@@ -659,13 +673,32 @@ export default function CommunicationsClient() {
 
   const handleUnitChange = (id: string) => setSelectedUnit(id);
 
-  // Search filter
-  const filteredTenants = tenants.filter(
-    (t) =>
+  // Search filter + tenant filter
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const ninetyDaysLater = new Date(today);
+  ninetyDaysLater.setDate(ninetyDaysLater.getDate() + 90);
+
+  const filteredTenants = tenants.filter((t) => {
+    // Search filter
+    const matchesSearch =
       t.full_name.toLowerCase().includes(searchTenant.toLowerCase()) ||
       t.email.toLowerCase().includes(searchTenant.toLowerCase()) ||
-      t.unit_name.toLowerCase().includes(searchTenant.toLowerCase())
-  );
+      t.unit_name.toLowerCase().includes(searchTenant.toLowerCase());
+    if (!matchesSearch) return false;
+
+    // Tenant filter
+    if (tenantFilter === 'outstanding_invoices') {
+      return t.has_outstanding_invoices === true;
+    }
+    if (tenantFilter === 'renewal_90') {
+      if (!t.lease_end_date) return false;
+      const endDate = new Date(t.lease_end_date);
+      endDate.setHours(0, 0, 0, 0);
+      return endDate >= today && endDate <= ninetyDaysLater;
+    }
+    return true;
+  });
 
   const selectedTenants = tenants.filter((t) => t.selected);
 
@@ -886,6 +919,38 @@ export default function CommunicationsClient() {
                 <div className="flex items-center gap-1.5 mb-2 px-2.5 py-1.5 bg-primary/5 border border-primary/15 rounded-lg">
                   <FolderOpen size={11} className="text-primary shrink-0" />
                   <span className="text-[11px] text-primary font-500 truncate">{hierarchyLabel}</span>
+                </div>
+              )}
+
+              {/* Tenant Filter */}
+              {tenants.length > 0 && (
+                <div className="mb-2">
+                  <div className="flex items-center gap-1 p-1 bg-secondary/60 rounded-lg border border-border">
+                    <button
+                      onClick={() => setTenantFilter('all')}
+                      className={`flex-1 px-2 py-1.5 text-[11px] font-500 rounded-md transition-all ${tenantFilter === 'all' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      All ({tenants.length})
+                    </button>
+                    <button
+                      onClick={() => setTenantFilter('outstanding_invoices')}
+                      className={`flex-1 px-2 py-1.5 text-[11px] font-500 rounded-md transition-all leading-tight ${tenantFilter === 'outstanding_invoices' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Outstanding
+                    </button>
+                    <button
+                      onClick={() => setTenantFilter('renewal_90')}
+                      className={`flex-1 px-2 py-1.5 text-[11px] font-500 rounded-md transition-all leading-tight ${tenantFilter === 'renewal_90' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Renewal 90d
+                    </button>
+                  </div>
+                  {tenantFilter === 'outstanding_invoices' && (
+                    <p className="text-[10px] text-muted-foreground mt-1 px-1">Tenants with sent, overdue or partially paid invoices</p>
+                  )}
+                  {tenantFilter === 'renewal_90' && (
+                    <p className="text-[10px] text-muted-foreground mt-1 px-1">Active leases expiring within the next 90 days</p>
+                  )}
                 </div>
               )}
 
