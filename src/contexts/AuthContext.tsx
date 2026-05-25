@@ -247,7 +247,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const isSuperAdmin = (): boolean => {
     if (!user) return false;
     return (
-      user.email === 'junutala@gmail.com' ||
+      user.email === process.env.NEXT_PUBLIC_SUPERADMIN_EMAIL ||
       user.user_metadata?.role === 'superadmin' ||
       allowedNavKeys === null
     );
