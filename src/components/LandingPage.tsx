@@ -152,22 +152,7 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    const cards = document.querySelectorAll('.lp-animate-card');
-    const obs = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) {
-          (e.target as HTMLElement).style.opacity = '1';
-          (e.target as HTMLElement).style.transform = 'translateY(0)';
-        }
-      }),
-      { threshold: 0.1 }
-    );
-    cards.forEach(c => obs.observe(c));
-    return () => obs.disconnect();
-  }, []);
-
-  const challenges = [
+    const challenges = [
     { icon: '📊', title: t.lp_prob1_title, desc: t.lp_prob1_desc },
     { icon: '🏛️', title: t.lp_prob2_title, desc: t.lp_prob2_desc },
     { icon: '🧾', title: t.lp_prob3_title, desc: t.lp_prob3_desc },
@@ -250,7 +235,7 @@ export default function LandingPage() {
         .lp-btn-blue:hover{background:var(--lp-blue-dark);transform:translateY(-1px);}
         .lp-btn-ghost{background:transparent;color:var(--lp-slate);font-size:13px;font-weight:600;padding:10px 18px;border-radius:6px;border:1px solid rgba(127,179,211,0.4);cursor:pointer;font-family:'DM Sans',sans-serif;transition:color 0.2s,border-color 0.2s;}
         .lp-btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,0.5);}
-        .lp-animate-card{opacity:0;transform:translateY(20px);transition:opacity 0.5s ease,transform 0.5s ease;}
+        .lp-animate-card{opacity:1;transform:translateY(0);transition:opacity 0.5s ease,transform 0.5s ease;}
         .lp-screenshot{width:100%;border-radius:20px;box-shadow:0 40px 100px rgba(0,0,0,0.55);border:2px solid rgba(255,255,255,0.1);display:block;}
         @media(max-width:768px){
           .lp-nav-links{display:none!important;}
