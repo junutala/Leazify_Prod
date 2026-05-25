@@ -12,6 +12,101 @@ interface Translations {
   nav_pricing: string;
   nav_about: string;
 
+// ── Landing Page ──
+lp_badge: string;
+lp_hero_title1: string;
+lp_hero_title2: string;
+lp_hero_title3: string;
+lp_hero_subtitle: string;
+lp_hero_cta_demo: string;
+lp_hero_cta_features: string;
+lp_hero_float_title: string;
+lp_hero_float_sub: string;
+lp_trust_security: string;
+lp_trust_roles: string;
+lp_trust_cloud: string;
+lp_trust_backups: string;
+lp_trust_dashboards: string;
+lp_problems_badge: string;
+lp_problems_title: string;
+lp_problems_subtitle: string;
+lp_prob1_title: string;
+lp_prob1_desc: string;
+lp_prob2_title: string;
+lp_prob2_desc: string;
+lp_prob3_title: string;
+lp_prob3_desc: string;
+lp_prob4_title: string;
+lp_prob4_desc: string;
+lp_features_badge: string;
+lp_features_title: string;
+lp_features_subtitle: string;
+lp_feat1_title: string;
+lp_feat1_desc: string;
+lp_feat2_title: string;
+lp_feat2_desc: string;
+lp_feat3_title: string;
+lp_feat3_desc: string;
+lp_feat4_title: string;
+lp_feat4_desc: string;
+lp_feat5_title: string;
+lp_feat5_desc: string;
+lp_feat6_title: string;
+lp_feat6_desc: string;
+lp_feat7_title: string;
+lp_feat7_desc: string;
+lp_feat8_title: string;
+lp_feat8_desc: string;
+lp_usp_badge: string;
+lp_usp_title: string;
+lp_usp1_title: string;
+lp_usp1_item1: string;
+lp_usp1_item2: string;
+lp_usp1_item3: string;
+lp_usp2_title: string;
+lp_usp2_item1: string;
+lp_usp2_item2: string;
+lp_usp2_item3: string;
+lp_outcomes_badge: string;
+lp_outcomes_title: string;
+lp_outcome1: string;
+lp_outcome2: string;
+lp_outcome3: string;
+lp_outcome4: string;
+lp_outcome5: string;
+lp_cta_title: string;
+lp_cta_subtitle: string;
+lp_cta_btn: string;
+lp_footer_tagline: string;
+lp_footer_product: string;
+lp_footer_contact: string;
+lp_footer_privacy: string;
+lp_footer_terms: string;
+lp_footer_copyright: string;
+lp_nav_challenges: string;
+lp_nav_features: string;
+lp_nav_why: string;
+lp_nav_outcomes: string;
+lp_nav_contact: string;
+lp_nav_signin: string;
+lp_nav_demo: string;
+lp_modal_title: string;
+lp_modal_subtitle: string;
+lp_modal_name: string;
+lp_modal_name_placeholder: string;
+lp_modal_email: string;
+lp_modal_email_placeholder: string;
+lp_modal_phone: string;
+lp_modal_phone_placeholder: string;
+lp_modal_submit: string;
+lp_modal_submitting: string;
+lp_modal_privacy: string;
+lp_modal_success_title: string;
+lp_modal_success_desc: string;
+lp_modal_success_link: string;
+lp_modal_email_error: string;
+lp_modal_phone_error: string;
+  
   // Hero
   hero_badge: string;
   hero_title1: string;
@@ -1884,6 +1979,101 @@ mio_mo_slot: 'تأكيد موعد الانتقال وحجز المصعد',
   footer_contact: 'تواصل معنا',
   footer_copyright: 'ليزيفاي',
 
+// ── Landing Page ──
+lp_badge: 'منصة ذكية واحدة',
+lp_hero_title1: 'برنامج إدارة الإيجارات لـ',
+lp_hero_title2: 'السكني والتجاري',
+lp_hero_title3: 'التجاري والمراكز التجارية',
+lp_hero_subtitle: 'كل نوع إيجار. كل هيكل ملكية. كل فاتورة — بشكل تلقائي. مبني للملاك الذين يمتلكون ويديرون عقارات متعددة الاستخدام.',
+lp_hero_cta_demo: 'احجز عرضاً تجريبياً مجانياً',
+lp_hero_cta_features: 'استكشف المميزات →',
+lp_hero_float_title: 'تم تطبيق زيادة الإيجار',
+lp_hero_float_sub: 'تم تجديد 3 عقود اليوم تلقائياً',
+lp_trust_security: 'أمان بمستوى البنوك',
+lp_trust_roles: 'وصول قائم على الأدوار',
+lp_trust_cloud: 'سحابي · متاح في أي مكان',
+lp_trust_backups: 'نسخ احتياطي تلقائي',
+lp_trust_dashboards: 'لوحات تحكم فورية',
+lp_problems_badge: 'المشكلة',
+lp_problems_title: 'هل هذا مألوف لك؟ لست وحدك.',
+lp_problems_subtitle: 'إدارة محفظة عقارية بدون الأدوات المناسبة أمر مُرهق. إليك ما يواجهه الملاك كل يوم.',
+lp_prob1_title: 'بيانات مشتتة في Excel والبريد الإلكتروني',
+lp_prob1_desc: 'لا توجد رؤية موحدة لمحفظتك. المعلومات موزعة في خمسة أماكن مختلفة ولا توجد نسخة واحدة محدَّثة.',
+lp_prob2_title: 'هياكل ملكية معقدة',
+lp_prob2_desc: 'الملكية المشتركة والصناديق العائلية والإيسوب تخلق فجوات في الرؤية لا يمكنك تحمّلها.',
+lp_prob3_title: 'مراجعة الإيجارات والفواتير يدوياً',
+lp_prob3_desc: 'ساعات تضيع كل شهر في إعادة إنشاء الفواتير ومتابعة جداول الزيادة التي يجب أن تعمل تلقائياً.',
+lp_prob4_title: 'طلبات صيانة غير متابعة',
+lp_prob4_desc: 'التأخر في الإصلاحات يعني مستأجرين غير راضين — وشواغر تكلفك أكثر بكثير من تكلفة الإصلاح.',
+lp_features_badge: 'كل ما تحتاجه',
+lp_features_title: 'جميع مراحل إيجارك. منصة واحدة.',
+lp_features_subtitle: 'من تسليم أول مفتاح إلى الفاتورة الأخيرة — كل سير عمل تحتاجه، مدمج من اليوم الأول.',
+lp_feat1_title: 'حدد محفظتك العقارية',
+lp_feat1_desc: 'نظّم العقارات هرمياً — مشروع ← مباني ← طوابق ← وحدات. بدون تعقيدات جداول البيانات.',
+lp_feat2_title: 'صنّف أنواع الاستخدام',
+lp_feat2_desc: 'صنّف الوحدات كسكنية أو تجارية أو مول أو أنواع مخصصة على أي مستوى من هيكلك.',
+lp_feat3_title: 'دعم تعدد الملاك',
+lp_feat3_desc: 'سجّل مالكاً واحداً أو متعددين على أي مستوى من هيكل عقارك بسهولة.',
+lp_feat4_title: 'أتمتة زيادات الإيجار',
+lp_feat4_desc: 'حدد قواعد الزيادة مرة واحدة ودع ليزيفاي يطبقها تلقائياً — لا تفوّت زيادة بعد الآن.',
+lp_feat5_title: 'تجديد العقود تلقائياً',
+lp_feat5_desc: 'أنشئ التجديدات تلقائياً بناءً على القواعد التي تحددها. مواعيد نهائية أقل فوتاً ومستأجرون أكثر سعادة.',
+lp_feat6_title: 'إنشاء الفواتير',
+lp_feat6_desc: 'أنشئ فواتير الإيجار ورسوم الخدمة والودائع الأمنية بنقرة واحدة.',
+lp_feat7_title: 'الخدمة والصيانة',
+lp_feat7_desc: 'يرفع المستأجرون الطلبات، وأنت ترفع أوامر العمل. يستلمها مزودو الخدمة بسلاسة.',
+lp_feat8_title: 'إيجار تبادل المول',
+lp_feat8_desc: 'سجّل المبيعات وأنشئ فواتير إيجار التبادل لمستأجري التجزئة والمولات بسهولة.',
+lp_usp_badge: 'ميزتنا الفريدة',
+lp_usp_title: 'مبني بالطريقة التي يعمل بها الملاك فعلاً',
+lp_usp1_title: 'وصول المشاهدة بدون ملكية',
+lp_usp1_item1: 'مثالي للصناديق العائلية والملكية المشتركة والعقارات المرهونة',
+lp_usp1_item2: 'يرى المالكون المستفيدون جميع المراحل بدون صلاحيات تعديل',
+lp_usp1_item3: 'شفافية دون المساس بأمن البيانات',
+lp_usp2_title: 'اتفاقيات إيجار مرنة',
+lp_usp2_item1: 'أنشئ مستأجرين ومستأجرين مشاركين بسهولة',
+lp_usp2_item2: 'أنشئ اتفاقيات إيجار مركّبة أو فردية',
+lp_usp2_item3: 'مثالي للمساحات المشتركة والامتيازات والعقود متعددة الأطراف',
+lp_outcomes_badge: 'النتيجة',
+lp_outcomes_title: 'ما تقدمه ليزيفاي لك',
+lp_outcome1: 'تدفق نقدي أفضل',
+lp_outcome2: 'شواغر أقل',
+lp_outcome3: 'مستأجرون أكثر سعادة',
+lp_outcome4: 'تكاليف تشغيل أقل',
+lp_outcome5: 'قرارات مبنية على البيانات',
+lp_cta_title: 'تحكم في إيجاراتك اليوم',
+lp_cta_subtitle: 'انضم إلى الملاك الذين انتقلوا من جداول البيانات المشتتة إلى منصة واحدة شفافة. محفظتك — مُدارة بالطريقة التي تستحقها.',
+lp_cta_btn: 'احجز عرضاً تجريبياً مجانياً',
+lp_footer_tagline: 'تحكم كامل في الإيجار للملاك — من أول مفتاح إلى آخر فاتورة.',
+lp_footer_product: 'المنصة',
+lp_footer_contact: 'تواصل معنا',
+lp_footer_privacy: 'سياسة الخصوصية',
+lp_footer_terms: 'شروط الخدمة',
+lp_footer_copyright: 'ليزيفاي. جميع الحقوق محفوظة.',
+lp_nav_challenges: 'التحديات',
+lp_nav_features: 'المميزات',
+lp_nav_why: 'لماذا ليزيفاي',
+lp_nav_outcomes: 'النتائج',
+lp_nav_contact: 'تواصل',
+lp_nav_signin: 'تسجيل الدخول',
+lp_nav_demo: 'احجز عرضاً',
+lp_modal_title: 'احجز عرضك التجريبي المجاني',
+lp_modal_subtitle: 'شاركنا تفاصيلك وسنتواصل معك خلال يوم عمل واحد.',
+lp_modal_name: 'اسمك',
+lp_modal_name_placeholder: 'مثال: أحمد المنصوري',
+lp_modal_email: 'البريد الإلكتروني',
+lp_modal_email_placeholder: 'you@example.com',
+lp_modal_phone: 'رقم الجوال',
+lp_modal_phone_placeholder: '+971 50 123 4567',
+lp_modal_submit: 'اطلب عرضي التجريبي المجاني →',
+lp_modal_submitting: 'جارٍ الإرسال...',
+lp_modal_privacy: '🔒 تفاصيلك في أمان معنا. لا رسائل غير مرغوب فيها أبداً.',
+lp_modal_success_title: 'تم بنجاح!',
+lp_modal_success_desc: 'شكراً لاهتمامك بليزيفاي. سيتواصل فريقنا معك قريباً لجدولة عرضك التجريبي المخصص.',
+lp_modal_success_link: 'www.leazify.me',
+lp_modal_email_error: 'يرجى إدخال بريد إلكتروني صحيح.',
+lp_modal_phone_error: 'يرجى إدخال رقم جوال صحيح.',
+  
   sidebar_dashboard: 'لوحة التحكم',
   sidebar_landlord_dashboard: 'لوحة تحكم المالك',
   sidebar_property: 'إدارة العقارات',
