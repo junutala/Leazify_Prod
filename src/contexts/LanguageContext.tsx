@@ -1,6 +1,21 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, 
+// Read synchronously before first render to avoid flash
+const getInitialLanguage = (): Language => {
+  if (typeof window === 'undefined') return 'en';
+  const saved = localStorage.getItem('leazify_language');
+  return saved === 'ar' ? 'ar' : 'en';
+};
+
+const [language, setLanguageState] = useState<Language>(getInitialLanguage);, 
+useEffect(() => {
+  const saved = localStorage.getItem('leazify_language') as Language | null;
+  if (saved === 'en' || saved === 'ar') {
+    setLanguageState(saved);
+  }
+}, []);, 
+useCallback } from 'react';
 
 export type Language = 'en' | 'ar';
 
@@ -2813,7 +2828,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t, isRTL }}>
-      <div dir={isRTL ? 'rtl' : 'ltr'} className={isRTL ? 'font-arabic' : ''}>
+      <div dir={isRTL ? 'rtl' : 'ltr'} className={isRTL ? 'font-arabic' : ''} suppressHydrationWarning>
         {children}
       </div>
     </LanguageContext.Provider>
