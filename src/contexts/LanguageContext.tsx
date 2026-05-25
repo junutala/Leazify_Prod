@@ -10,10 +10,6 @@ const getInitialLanguage = (): Language => {
   return saved === 'ar' ? 'ar' : 'en';
 };
 
-useCallback } from 'react';
-
-export type Language = 'en' | 'ar';
-
 interface Translations {
   // Nav
   nav_features: string;
