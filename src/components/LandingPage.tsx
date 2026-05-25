@@ -33,7 +33,7 @@ function DemoModal({ onClose }: { onClose: () => void }) {
       if (!res.ok) throw new Error('Failed');
       setSuccess(true);
     } catch {
-      setSuccess(true);
+      alert('Something went wrong. Please email contact@leazify.me directly.');
     } finally {
       setLoading(false);
     }
