@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err: any) {
       console.error('[AuthContext] loadStaffPermissions failed:', err?.message);
       // On unexpected error → grant full access to avoid lockout
-      setAllowedNavKeys(null);
+      setAllowedNavKeys([]);;
       setAssignedProjectIds(null);
     } finally {
       loadingRef.current = false;
