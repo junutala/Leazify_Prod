@@ -10,13 +10,6 @@ const getInitialLanguage = (): Language => {
   return saved === 'ar' ? 'ar' : 'en';
 };
 
-const [language, setLanguageState] = useState<Language>(getInitialLanguage);, 
-useEffect(() => {
-  const saved = localStorage.getItem('leazify_language') as Language | null;
-  if (saved === 'en' || saved === 'ar') {
-    setLanguageState(saved);
-  }
-}, []);, 
 useCallback } from 'react';
 
 export type Language = 'en' | 'ar';
