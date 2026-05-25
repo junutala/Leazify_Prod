@@ -49,10 +49,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-    { url: '/assets/images/Color_trimmed-1779419889345.jpg', type: 'image/jpeg' },
     { url: '/favicon.ico', type: 'image/x-icon' }],
-
-    apple: [{ url: '/assets/images/Color_trimmed-1779419889345.jpg', type: 'image/jpeg' }]
+    apple: [{ url: '/assets/images/app_logo.png', type: 'image/png' }]
   },
   robots: {
     index: true,
@@ -81,7 +79,7 @@ export default function RootLayout({
               '@type': 'Organization',
               name: 'Leazify',
               url: 'https://leazify.me',
-              logo: "https://img.rocket.new/generatedImages/rocket_gen_img_1a91ca987-1779420022606.png",
+              logo: "https://www.leazify.me/assets/images/app_logo.png",
               description: 'Rental application platform for retail, commercial buildings, malls, and residential properties.',
               sameAs: []
             })
@@ -126,8 +124,7 @@ export default function RootLayout({
             })
           }} />
 
-        <script type="module" async src="https://static.rocket.new/rocket-web.js?_cfg=https%3A%2F%2Fpropflow2839back.builtwithrocket.new&_be=https%3A%2F%2Fappanalytics.rocket.new&_v=0.1.18" />
-        <script type="module" defer src="https://static.rocket.new/rocket-shot.js?v=0.0.2" /></head>
+       </head>
       <body>
         <AuthProvider>
           <LanguageProvider>
