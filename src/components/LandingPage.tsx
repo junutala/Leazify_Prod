@@ -214,8 +214,7 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap');
-        :root {
+                :root {
           --lp-navy:#1a2e4a; --lp-navy-mid:#1f3d63; --lp-navy-deep:#0d1c2e;
           --lp-orange:#F5A623; --lp-orange-dark:#e0911a;
           --lp-blue:#29ABE2; --lp-blue-dark:#1a90c8;
