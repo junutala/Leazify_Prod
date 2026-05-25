@@ -1842,7 +1842,7 @@ mio_mo_slot: 'Confirm building move-out slot and lift booking',
   lp_modal_success_link: 'www.leazify.me',
   lp_modal_email_error: 'Please enter a valid email address.',
   lp_modal_phone_error: 'Please enter a valid mobile number.',
-    
+};
 const ar: Translations = {
   nav_features: 'المميزات',
   nav_getStarted: 'ابدأ الآن',
