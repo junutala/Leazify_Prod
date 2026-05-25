@@ -71,71 +71,77 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Organization',
-              name: 'Leazify',
-              url: 'https://leazify.me',
-              logo: "https://www.leazify.me/assets/images/app_logo.png",
-              description: 'Rental application platform for retail, commercial buildings, malls, and residential properties.',
-              sameAs: []
-            })
-          }} />
-        
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'WebPage',
-              name: 'Leazify - Rental Applications for Retail, Commercial & Malls',
-              description: 'Leazify helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
-              url: 'https://leazify.me',
-              publisher: {
-                '@type': 'Organization',
-                name: 'Leazify',
-                logo: {
-                  '@type': 'ImageObject',
-                  url: 'https://leazify.me/assets/images/app_logo.png'
-                }
-              }
-            })
-          }} />
-        
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'SoftwareApplication',
-              name: 'Leazify',
-              description: 'Rental application platform for retail, commercial buildings, malls, and residential properties.',
-              url: 'https://leazify.me',
-              applicationCategory: 'BusinessApplication',
-              operatingSystem: 'Web',
-              offers: {
-                '@type': 'Offer',
-                price: '0',
-                priceCurrency: 'AED'
-              }
-            })
-          }} />
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{
+      __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'Leazify',
+        url: 'https://leazify.me',
+        logo: "https://www.leazify.me/assets/images/app_logo.png",
+        description: 'Rental application platform for retail, commercial buildings, malls, and residential properties.',
+        sameAs: []
+      })
+    }} />
 
-       </head>
-      <body>
-        <AuthProvider>
-          <LanguageProvider>
-            <DataRefreshProvider>
-              {children}
-            </DataRefreshProvider>
-          </LanguageProvider>
-        </AuthProvider>
-        <Toaster position="bottom-right" richColors closeButton />
-        <Analytics />
-      </body>
-    </html>);
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{
+      __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'Leazify - Rental Applications for Retail, Commercial & Malls',
+        description: 'Leazify helps property managers track leases, financials, and maintenance across commercial real estate portfolios from a single dashboard.',
+        url: 'https://leazify.me',
+        publisher: {
+          '@type': 'Organization',
+          name: 'Leazify',
+          logo: {
+            '@type': 'ImageObject',
+            url: 'https://leazify.me/assets/images/app_logo.png'
+          }
+        }
+      })
+    }} />
+
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{
+      __html: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'Leazify',
+        description: 'Rental application platform for retail, commercial buildings, malls, and residential properties.',
+        url: 'https://leazify.me',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'AED'
+        }
+      })
+    }} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+</head>
+        <body>
+          <AuthProvider>
+            <LanguageProvider>
+              <DataRefreshProvider>
+                {children}
+              </DataRefreshProvider>
+            </LanguageProvider>
+          </AuthProvider>
+          <Toaster position="bottom-right" richColors closeButton />
+          <Analytics />
+        </body>
+      </html>);
 
 }
