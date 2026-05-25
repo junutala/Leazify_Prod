@@ -1748,8 +1748,6 @@ mio_mo_vehicle: 'Vehicle registration address updated (RTA / traffic dept)',
 mio_mo_school: 'School / healthcare records updated if applicable',
 mio_mo_slot: 'Confirm building move-out slot and lift booking',
   
-};
-
 // ── Landing Page ──
   lp_badge: 'One Smart Platform',
   lp_hero_title1: 'Leasing Management Software for',
