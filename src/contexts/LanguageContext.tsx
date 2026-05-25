@@ -1,7 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, 
-// Read synchronously before first render to avoid flash
+import React, { createContext, useContext, useState, useCallback } from 'react';
+
+export type Language = 'en' | 'ar';
+
 const getInitialLanguage = (): Language => {
   if (typeof window === 'undefined') return 'en';
   const saved = localStorage.getItem('leazify_language');
@@ -2809,16 +2811,9 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en');
+  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('leazify_language') as Language | null;
-    if (saved === 'en' || saved === 'ar') {
-      setLanguageState(saved);
-    }
-  }, []);
-
-  const setLanguage = useCallback((lang: Language) => {
+   const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('leazify_language', lang);
   }, []);
